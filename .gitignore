@@ -1,0 +1,14 @@
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+
+# Environment
+.env
+
+# OS files
+.DS_Store
+
+# VSCode / PyCharm
+.vscode/
+.idea/

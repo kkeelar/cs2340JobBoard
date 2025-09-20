@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to JobBoard{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-4 fw-bold">Welcome to JobBoard</h1>
+  <p class="lead mb-4">Connecting job seekers with recruiters, one click at a time.</p>
+    {% if not user.is_authenticated %}
+    <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Get Started</a>
+  {% endif %}
+</div>
+{% endblock %}
