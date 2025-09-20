@@ -6,7 +6,10 @@ urlpatterns = [
     path("signup/", views.signup, name="signup"),
     path("login/", views.login_view, name="login"),   # if you’ve made a custom login
     path("logout/", views.logout_view, name="logout"),  # use your view here
-    
+    path("profile/", views.profile, name="profile"),
+    path("profile/edit/", views.edit_profile, name="edit_profile"),
+
+
     
     # password management
     path("password_change/", auth_views.PasswordChangeView.as_view(), name="password_change"),
