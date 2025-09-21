@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-3 text-center">
+      <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width:120px; height:120px; font-size:2rem;">
+        {{ profile.user.username|first|upper }}
+      </div>
+    </div>
+    <div class="col-md-9">
+      <h2>{{ profile.user.username }}</h2>
+      {% if profile.headline %}
+        <h5 class="text-muted">{{ profile.headline }}</h5>
+      {% endif %}
+      {% if profile.location %}
+        <p><i class="bi bi-geo-alt"></i> {{ profile.location }}</p>
+      {% endif %}
+      {% if profile.bio %}
+        <p>{{ profile.bio }}</p>
+      {% endif %}
+      <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline-primary">Edit Profile</a>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  {% if skills %}
+  <div class="mb-4">
+    <h4>🛠 Skills</h4>
+    {% for skill in skills %}
+      <span class="badge bg-primary me-1">{{ skill }}</span>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+  <!-- Links -->
+  {% if profile.links %}
+  <div class="mb-4">
+    <h4>🔗 Links</h4>
+    <ul class="list-unstyled">
+      {% for link in profile.links.splitlines %}
+        <li><a href="{{ link }}" target="_blank">{{ link }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Education -->
+  <div class="mb-4">
+    <h4>🎓 Education</h4>
+    {% for edu in profile.education.all %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">{{ edu.school }}</h5>
+          <p class="card-text mb-1">
+            <strong>Major:</strong> {{ edu.major }}<br>
+            {% if edu.minor %}<strong>Minor:</strong> {{ edu.minor }}<br>{% endif %}
+          </p>
+          <small class="text-muted">{{ edu.start_date }} – {{ edu.end_date|default:"Present" }}</small>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No education details yet.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Work Experience -->
+  <div class="mb-4">
+    <h4>💼 Work Experience</h4>
+    {% for work in profile.work_experience.all %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">{{ work.position }}</h5>
+          <p class="card-text mb-1">
+            <strong>Company:</strong> {{ work.company }}
+          </p>
+          <small class="text-muted">{{ work.start_date }} – {{ work.end_date|default:"Present" }}</small>
+          {% if work.description %}
+            <p class="mt-2">{{ work.description }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No work experience added yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

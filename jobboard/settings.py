@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts',
+    'accounts.apps.AccountsConfig'
 ]
 
 MIDDLEWARE = [
@@ -127,3 +127,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Redirects
 LOGOUT_REDIRECT_URL = "/"     # after logout, send user to homepage
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
