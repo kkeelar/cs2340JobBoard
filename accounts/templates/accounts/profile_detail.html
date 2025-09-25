@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.user.get_full_name|default:profile.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-0">
+        {{ profile.user.get_full_name|default:profile.user.username }}
+      </h2>
+      {% if profile.headline %}
+        <div class="text-muted">{{ profile.headline }}</div>
+      {% endif %}
+    </div>
+    <div>
+      {% if profile.is_public %}
+        <span class="badge bg-success">Public</span>
+      {% else %}
+        <span class="badge bg-secondary">Private</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if is_private_for_viewer %}
+    <!-- Instagram-style private shell -->
+    <div class="card shadow-sm">
+      <div class="card-body text-center py-5">
+        <div style="font-size: 48px; line-height:1;">🔒</div>
+        <h4 class="mt-3 mb-2">{{ profile.user.username }}</h4>
+        <p class="text-muted mb-0">This profile is private.</p>
+      </div>
+    </div>
+  {% else %}
+
+    <!-- Contact -->
+    {% if can_see_email %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Contact</h5>
+          <p class="mb-0"><strong>Email:</strong> {{ profile.email }}</p>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Links -->
+    {% if can_see_links and profile.links %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Links</h5>
+          <div>{{ profile.links|linebreaksbr }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Skills -->
+    {% if can_see_skills and skills %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Skills</h5>
+          <div>
+            {% for s in skills %}
+              {% if s %}
+                <span class="badge bg-light text-dark border me-1 mb-1">{{ s }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Education -->
+    {% if can_see_education and profile.education.all %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Education</h5>
+          <ul class="mb-0">
+            {% for edu in profile.education.all %}
+              <li>
+                <strong>{{ edu.school }}</strong>
+                {% if edu.major %}, {{ edu.major }}{% endif %}
+                — {{ edu.start_date }}{% if edu.end_date %}–{{ edu.end_date }}{% else %}–Present{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Work Experience -->
+    {% if can_see_work and profile.work_experience.all %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-2">Work Experience</h5>
+          <ul class="mb-0">
+            {% for wx in profile.work_experience.all %}
+              <li>
+                <strong>{{ wx.position }}</strong>, {{ wx.company }}
+                — {{ wx.start_date }}{% if wx.end_date %}–{{ wx.end_date }}{% else %}–Present{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}
