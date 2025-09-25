@@ -6,13 +6,24 @@ from .models import Profile, Education, WorkExperience
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ["headline", "bio", "location", "skills", "links"]
+        fields = [
+            # existing fields:
+            "headline", "bio", "location", "skills", "links",
+            # privacy fields (new):
+            "is_public", "show_email", "show_links", "show_education", "show_work", "show_skills",
+        ]
         labels = {
             "headline": "Headline",
             "bio": "Bio",
             "location": "Location",
             "skills": "Skills (comma-separated)",
             "links": "Links (comma-separated URLs)",
+            "is_public": "Public profile",
+            "show_email": "Show email",
+            "show_links": "Show links",
+            "show_education": "Show education",
+            "show_work": "Show work experience",
+            "show_skills": "Show skills",
         }
         widgets = {
             "headline": forms.TextInput(attrs={"class": "form-control"}),
@@ -20,8 +31,14 @@ class ProfileForm(forms.ModelForm):
             "location": forms.TextInput(attrs={"class": "form-control"}),
             "skills": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "links": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            # checkboxes:
+            "is_public": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_email": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_links": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_education": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_work": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_skills": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
-
 
 # Education formset
 EducationFormSet = inlineformset_factory(
@@ -78,3 +95,5 @@ WorkFormSet = inlineformset_factory(
         "start_date": {"required": "Start date is required."},
     }
 )
+
+

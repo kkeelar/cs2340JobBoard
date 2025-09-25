@@ -38,7 +38,92 @@
     <div class="card mb-4 shadow-sm">
       <div class="card-body">
         <h4>👤 Basic Info</h4>
-        {{ profile_form.as_p }}
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ profile_form.headline.id_for_label }}">Headline</label>
+          {{ profile_form.headline }}
+          {{ profile_form.headline.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ profile_form.bio.id_for_label }}">Bio</label>
+          {{ profile_form.bio }}
+          {{ profile_form.bio.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ profile_form.location.id_for_label }}">Location</label>
+          {{ profile_form.location }}
+          {{ profile_form.location.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ profile_form.skills.id_for_label }}">Skills (comma-separated)</label>
+          {{ profile_form.skills }}
+          {{ profile_form.skills.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ profile_form.links.id_for_label }}">Links (comma-separated URLs)</label>
+          {{ profile_form.links }}
+          {{ profile_form.links.errors }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <h4>🔒 Privacy</h4>
+        <p class="text-muted mb-3">Control what non-owners (e.g., recruiters) can see on your profile.</p>
+
+        <div class="form-check mb-2">
+          {{ profile_form.is_public }}
+          <label class="form-check-label" for="{{ profile_form.is_public.id_for_label }}">
+            Public profile
+          </label>
+          {{ profile_form.is_public.errors }}
+        </div>
+
+        <div class="form-check mb-2">
+          {{ profile_form.show_email }}
+          <label class="form-check-label" for="{{ profile_form.show_email.id_for_label }}">
+            Show email
+          </label>
+          {{ profile_form.show_email.errors }}
+        </div>
+
+        <div class="form-check mb-2">
+          {{ profile_form.show_links }}
+          <label class="form-check-label" for="{{ profile_form.show_links.id_for_label }}">
+            Show links
+          </label>
+          {{ profile_form.show_links.errors }}
+        </div>
+
+        <div class="form-check mb-2">
+          {{ profile_form.show_education }}
+          <label class="form-check-label" for="{{ profile_form.show_education.id_for_label }}">
+            Show education
+          </label>
+          {{ profile_form.show_education.errors }}
+        </div>
+
+        <div class="form-check mb-2">
+          {{ profile_form.show_work }}
+          <label class="form-check-label" for="{{ profile_form.show_work.id_for_label }}">
+            Show work experience
+          </label>
+          {{ profile_form.show_work.errors }}
+        </div>
+
+        <div class="form-check">
+          {{ profile_form.show_skills }}
+          <label class="form-check-label" for="{{ profile_form.show_skills.id_for_label }}">
+            Show skills
+          </label>
+          {{ profile_form.show_skills.errors }}
+        </div>
       </div>
     </div>
 

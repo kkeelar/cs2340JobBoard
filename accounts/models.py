@@ -10,6 +10,15 @@ class Profile(models.Model):
     skills = models.TextField(blank=True, null=True)  # could later become ManyToMany
     links = models.TextField(blank=True, null=True)
 
+    # --- Privacy controls (new) ---
+    is_public = models.BooleanField(default=True, help_text="If off, only you and staff can see your profile.")
+    show_email = models.BooleanField(default=False, help_text="Allow others to see your email.")
+    show_links = models.BooleanField(default=True, help_text="Allow others to see your external links.")
+    show_education = models.BooleanField(default=True, help_text="Allow others to see your education history.")
+    show_work = models.BooleanField(default=True, help_text="Allow others to see your work experience.")
+    show_skills = models.BooleanField(default=True, help_text="Allow others to see your skills.")
+
+
     def __str__(self):
         return f"{self.user.username}'s profile"
 
@@ -20,13 +29,11 @@ class Education(models.Model):
         max_length=255,
         error_messages={"blank": "Please enter the name of your school."},
     )
-    major = models.CharField(
-        max_length=255,
-        error_messages={"blank": "Please enter your major."},
-    )
+    major = models.CharField(max_length=120, blank=True, null=True, default="")
     minor = models.CharField(max_length=255, blank=True, null=True)
     start_date = models.DateField(
-        error_messages={"null": "Please provide a start date."}
+        blank=False, null=False,
+        error_messages={"required": "Please provide a start date."}
     )
     end_date = models.DateField(blank=True, null=True)
 
@@ -44,10 +51,13 @@ class WorkExperience(models.Model):
         error_messages={"blank": "Please enter your job title."},
     )
     start_date = models.DateField(
-        error_messages={"null": "Please provide a start date."}
+        blank=False, null=False,
+        error_messages={"required": "Please provide a start date."}
     )
     end_date = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.position} at {self.company}"
+
+
