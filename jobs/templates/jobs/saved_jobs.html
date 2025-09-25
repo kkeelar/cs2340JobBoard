@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Saved Jobs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 mb-0">Saved Jobs</h1>
+      <p class="text-muted mb-0">Jobs you've saved for later review</p>
+    </div>
+    <a href="{% url 'job_list' %}" class="btn btn-primary">
+      <i class="fas fa-search"></i> Browse More Jobs
+    </a>
+  </div>
+  
+  <!-- Saved Jobs List -->
+  {% if saved_jobs %}
+    <div class="row">
+      {% for saved_job in saved_jobs %}
+        <div class="col-lg-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <!-- Job Header -->
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title mb-0">
+                  <a href="{% url 'job_detail' saved_job.job.pk %}" class="text-decoration-none">
+                    {{ saved_job.job.title }}
+                  </a>
+                </h5>
+                <!-- Unsave Button -->
+                <button class="btn btn-sm btn-outline-danger unsave-job-btn" 
+                        data-job-id="{{ saved_job.job.pk }}">
+                  <i class="fas fa-bookmark"></i>
+                </button>
+              </div>
+              
+              <h6 class="card-subtitle mb-2 text-muted">{{ saved_job.job.company }}</h6>
+              
+              <!-- Job Info -->
+              <div class="mb-3">
+                <small class="text-muted">
+                  <i class="fas fa-map-marker-alt"></i> {{ saved_job.job.location }}
+                  <span class="mx-2">•</span>
+                  <i class="fas fa-briefcase"></i> {{ saved_job.job.get_work_type_display }}
+                  {% if saved_job.job.visa_sponsorship %}
+                    <span class="mx-2">•</span>
+                    <span class="badge bg-info">Visa Sponsorship</span>
+                  {% endif %}
+                </small>
+              </div>
+              
+              <!-- Salary -->
+              {% if saved_job.job.salary_min or saved_job.job.salary_max %}
+                <p class="mb-2">
+                  <strong>💰 {{ saved_job.job.salary_range_display }}</strong>
+                </p>
+              {% endif %}
+              
+              <!-- Skills -->
+              {% if saved_job.job.required_skills %}
+                <div class="mb-3">
+                  {% for skill in saved_job.job.get_required_skills_list|slice:":3" %}
+                    <span class="badge bg-secondary me-1">{{ skill }}</span>
+                  {% endfor %}
+                  {% if saved_job.job.get_required_skills_list|length > 3 %}
+                    <span class="text-muted">+{{ saved_job.job.get_required_skills_list|length|add:"-3" }} more</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+              
+              <!-- Description Preview -->
+              <p class="card-text text-muted">
+                {{ saved_job.job.description|truncatewords:15 }}
+              </p>
+              
+              <!-- Action Buttons -->
+              <div class="d-flex gap-2">
+                <a href="{% url 'job_detail' saved_job.job.pk %}" class="btn btn-outline-primary btn-sm">
+                  View Details
+                </a>
+                <a href="{% url 'apply_to_job' saved_job.job.pk %}" class="btn btn-primary btn-sm">
+                  Apply Now
+                </a>
+              </div>
+              
+              <!-- Saved Date -->
+              <small class="text-muted mt-2 d-block">
+                Saved {{ saved_job.saved_date|timesince }} ago
+              </small>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <nav aria-label="Saved jobs pagination">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+          {% endif %}
+          
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+    
+  {% else %}
+    <!-- No Saved Jobs -->
+    <div class="text-center py-5">
+      <div style="font-size: 48px;">📌</div>
+      <h3 class="mt-3">No saved jobs yet</h3>
+      <p class="text-muted">Start browsing jobs and save the ones that interest you for quick access later.</p>
+      <a href="{% url 'job_list' %}" class="btn btn-primary">Browse Jobs</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Unsave Job AJAX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.unsave-job-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const jobId = this.getAttribute('data-job-id');
+            const card = this.closest('.col-lg-6');
+            
+            fetch(`/jobs/${jobId}/save/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.saved) {
+                    // Remove the card with animation
+                    card.style.transition = 'opacity 0.3s ease';
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                        // Check if no more saved jobs
+                        if (document.querySelectorAll('.unsave-job-btn').length === 0) {
+                            location.reload();
+                        }
+                    }, 300);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
+{% endblock %}

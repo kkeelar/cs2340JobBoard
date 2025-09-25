@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Browse Jobs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <!-- Search Filters Sidebar -->
+    <div class="col-lg-3 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">🔍 Filter Jobs</h5>
+        </div>
+        <div class="card-body">
+          <form method="get" id="job-search-form">
+            <!-- Search Query -->
+            <div class="mb-3">
+              {{ form.search.label_tag }}
+              {{ form.search }}
+            </div>
+            
+            <!-- Location -->
+            <div class="mb-3">
+              {{ form.location.label_tag }}
+              {{ form.location }}
+            </div>
+            
+            <!-- Skills -->
+            <div class="mb-3">
+              {{ form.skills.label_tag }}
+              {{ form.skills }}
+              <small class="form-text text-muted">{{ form.skills.help_text }}</small>
+            </div>
+            
+            <!-- Salary Range -->
+            <div class="mb-3">
+              <label class="form-label">Salary Range</label>
+              <div class="row">
+                <div class="col-6">
+                  {{ form.salary_min }}
+                  <small class="form-text text-muted">Min</small>
+                </div>
+                <div class="col-6">
+                  {{ form.salary_max }}
+                  <small class="form-text text-muted">Max</small>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Work Type -->
+            <div class="mb-3">
+              {{ form.work_type.label_tag }}
+              {{ form.work_type }}
+            </div>
+            
+            <!-- Visa Sponsorship -->
+            <div class="mb-3 form-check">
+              {{ form.visa_sponsorship }}
+              {{ form.visa_sponsorship.label_tag }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+            <a href="{% url 'job_list' %}" class="btn btn-outline-secondary w-100 mt-2">Clear All</a>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Job Results -->
+    <div class="col-lg-9">
+      <!-- Results Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="mb-0">Job Opportunities</h2>
+          <p class="text-muted mb-0">{{ total_jobs }} job{{ total_jobs|pluralize }} found</p>
+        </div>
+        {% if user.is_staff %}
+          <a href="{% url 'post_job' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Post New Job
+          </a>
+        {% endif %}
+      </div>
+      
+      <!-- Job Cards -->
+      {% if jobs %}
+        <div class="row">
+          {% for job in jobs %}
+            <div class="col-md-6 mb-4">
+              <div class="card h-100 shadow-sm job-card">
+                <div class="card-body">
+                  <!-- Job Header -->
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                      <a href="{% url 'job_detail' job.pk %}" class="text-decoration-none">
+                        {{ job.title }}
+                      </a>
+                    </h5>
+                    <!-- Save/Unsave Button -->
+                    {% if user.is_authenticated %}
+                      <button class="btn btn-sm btn-outline-primary save-job-btn" 
+                              data-job-id="{{ job.pk }}"
+                              data-saved="{% if job.pk in saved_job_ids %}true{% else %}false{% endif %}">
+                        {% if job.pk in saved_job_ids %}
+                          <i class="fas fa-bookmark"></i>
+                        {% else %}
+                          <i class="far fa-bookmark"></i>
+                        {% endif %}
+                      </button>
+                    {% endif %}
+                  </div>
+                  
+                  <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                  
+                  <!-- Job Info -->
+                  <div class="mb-3">
+                    <small class="text-muted">
+                      <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                      <span class="mx-2">•</span>
+                      <i class="fas fa-briefcase"></i> {{ job.get_work_type_display }}
+                      {% if job.visa_sponsorship %}
+                        <span class="mx-2">•</span>
+                        <span class="badge bg-info">Visa Sponsorship</span>
+                      {% endif %}
+                    </small>
+                  </div>
+                  
+                  <!-- Salary -->
+                  {% if job.salary_min or job.salary_max %}
+                    <p class="mb-2">
+                      <strong>💰 {{ job.salary_range_display }}</strong>
+                    </p>
+                  {% endif %}
+                  
+                  <!-- Skills -->
+                  {% if job.required_skills %}
+                    <div class="mb-3">
+                      {% for skill in job.get_required_skills_list|slice:":3" %}
+                        <span class="badge bg-secondary me-1">{{ skill }}</span>
+                      {% endfor %}
+                      {% if job.get_required_skills_list|length > 3 %}
+                        <span class="text-muted">+{{ job.get_required_skills_list|length|add:"-3" }} more</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                  
+                  <!-- Description Preview -->
+                  <p class="card-text text-muted">
+                    {{ job.description|truncatewords:15 }}
+                  </p>
+                  
+                  <!-- Action Buttons -->
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-primary btn-sm">
+                      View Details
+                    </a>
+                    {% if user.is_authenticated %}
+                      {% if job.pk in applied_job_ids %}
+                        <span class="badge bg-success align-self-center">Applied</span>
+                      {% else %}
+                        <a href="{% url 'apply_to_job' job.pk %}" class="btn btn-primary btn-sm">
+                          Quick Apply
+                        </a>
+                      {% endif %}
+                    {% else %}
+                      <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
+                        Login to Apply
+                      </a>
+                    {% endif %}
+                  </div>
+                  
+                  <!-- Posted Date -->
+                  <small class="text-muted mt-2 d-block">
+                    Posted {{ job.posted_date|timesince }} ago
+                  </small>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+          <nav aria-label="Job pagination">
+            <ul class="pagination justify-content-center">
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+              {% endif %}
+              
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        {% endif %}
+        
+      {% else %}
+        <!-- No Jobs Found -->
+        <div class="text-center py-5">
+          <div style="font-size: 48px;">🔍</div>
+          <h3 class="mt-3">No jobs found</h3>
+          <p class="text-muted">Try adjusting your search filters or check back later for new opportunities.</p>
+          <a href="{% url 'job_list' %}" class="btn btn-primary">View All Jobs</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Save Job AJAX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.save-job-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const jobId = this.getAttribute('data-job-id');
+            const isSaved = this.getAttribute('data-saved') === 'true';
+            
+            fetch(`/jobs/${jobId}/save/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const icon = this.querySelector('i');
+                if (data.saved) {
+                    icon.className = 'fas fa-bookmark';
+                    this.setAttribute('data-saved', 'true');
+                } else {
+                    icon.className = 'far fa-bookmark';
+                    this.setAttribute('data-saved', 'false');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
+{% endblock %}

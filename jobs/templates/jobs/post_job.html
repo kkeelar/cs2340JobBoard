@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Post a Job{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Header -->
+      <div class="text-center mb-4">
+        <h1 class="h2">Post a New Job</h1>
+        <p class="lead text-muted">Find your next great hire</p>
+      </div>
+      
+      <!-- Job Posting Form -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="mb-4">
+              <h5 class="border-bottom pb-2">Basic Information</h5>
+              
+              <div class="mb-3">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {% if form.title.errors %}
+                  <div class="text-danger mt-1">{{ form.title.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                {{ form.company.label_tag }}
+                {{ form.company }}
+                {% if form.company.errors %}
+                  <div class="text-danger mt-1">{{ form.company.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {% if form.description.errors %}
+                  <div class="text-danger mt-1">{{ form.description.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                  Provide a detailed description of the role, responsibilities, and what makes this opportunity special.
+                </small>
+              </div>
+            </div>
+            
+            <!-- Location & Work Arrangement -->
+            <div class="mb-4">
+              <h5 class="border-bottom pb-2">Location & Work Arrangement</h5>
+              
+              <div class="mb-3">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+                {% if form.location.errors %}
+                  <div class="text-danger mt-1">{{ form.location.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                {{ form.work_type.label_tag }}
+                {{ form.work_type }}
+                {% if form.work_type.errors %}
+                  <div class="text-danger mt-1">{{ form.work_type.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- Compensation -->
+            <div class="mb-4">
+              <h5 class="border-bottom pb-2">Compensation</h5>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.salary_min.label_tag }}
+                    {{ form.salary_min }}
+                    {% if form.salary_min.errors %}
+                      <div class="text-danger mt-1">{{ form.salary_min.errors }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">{{ form.salary_min.help_text }}</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.salary_max.label_tag }}
+                    {{ form.salary_max }}
+                    {% if form.salary_max.errors %}
+                      <div class="text-danger mt-1">{{ form.salary_max.errors }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">{{ form.salary_max.help_text }}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Requirements -->
+            <div class="mb-4">
+              <h5 class="border-bottom pb-2">Requirements</h5>
+              
+              <div class="mb-3">
+                {{ form.required_skills.label_tag }}
+                {{ form.required_skills }}
+                {% if form.required_skills.errors %}
+                  <div class="text-danger mt-1">{{ form.required_skills.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">{{ form.required_skills.help_text }}</small>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.experience_level.label_tag }}
+                    {{ form.experience_level }}
+                    {% if form.experience_level.errors %}
+                      <div class="text-danger mt-1">{{ form.experience_level.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.job_type.label_tag }}
+                    {{ form.job_type }}
+                    {% if form.job_type.errors %}
+                      <div class="text-danger mt-1">{{ form.job_type.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-check mb-3">
+                {{ form.visa_sponsorship }}
+                {{ form.visa_sponsorship.label_tag }}
+                {% if form.visa_sponsorship.errors %}
+                  <div class="text-danger mt-1">{{ form.visa_sponsorship.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- Application Details -->
+            <div class="mb-4">
+              <h5 class="border-bottom pb-2">Application Details</h5>
+              
+              <div class="mb-3">
+                {{ form.contact_email.label_tag }}
+                {{ form.contact_email }}
+                {% if form.contact_email.errors %}
+                  <div class="text-danger mt-1">{{ form.contact_email.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                {{ form.application_deadline.label_tag }}
+                {{ form.application_deadline }}
+                {% if form.application_deadline.errors %}
+                  <div class="text-danger mt-1">{{ form.application_deadline.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">{{ form.application_deadline.help_text }}</small>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus"></i> Post Job
+              </button>
+              <a href="{% url 'job_list' %}" class="btn btn-outline-secondary btn-lg">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Tips -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-header">
+          <h6 class="mb-0">💡 Tips for a Great Job Posting</h6>
+        </div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>Write a clear, descriptive job title</li>
+            <li>Include specific responsibilities and requirements</li>
+            <li>Mention your company culture and benefits</li>
+            <li>Be transparent about salary range when possible</li>
+            <li>Specify required skills and experience level</li>
+            <li>Include growth opportunities and learning paths</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

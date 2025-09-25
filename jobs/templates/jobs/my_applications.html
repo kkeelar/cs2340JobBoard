@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}My Job Applications{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 mb-0">My Applications</h1>
+      <p class="text-muted mb-0">Track the status of your job applications</p>
+    </div>
+    <a href="{% url 'job_list' %}" class="btn btn-primary">
+      <i class="fas fa-search"></i> Browse Jobs
+    </a>
+  </div>
+  
+  <!-- Status Overview Cards -->
+  <div class="row mb-4">
+    <div class="col-md-2">
+      <div class="card bg-primary text-white text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.applied }}</h3>
+          <small>Applied</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card bg-warning text-white text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.review }}</h3>
+          <small>Under Review</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card bg-info text-white text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.interview }}</h3>
+          <small>Interview</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card bg-success text-white text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.offer }}</h3>
+          <small>Offer</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card bg-secondary text-white text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.closed }}</h3>
+          <small>Closed</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card bg-light text-center">
+        <div class="card-body">
+          <h3 class="mb-0">{{ status_counts.applied|add:status_counts.review|add:status_counts.interview|add:status_counts.offer|add:status_counts.closed }}</h3>
+          <small>Total</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Status Filter -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h6 class="mb-3">Filter by Status</h6>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'my_applications' %}" 
+           class="btn {% if not current_status_filter %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+          All Applications
+        </a>
+        {% for status_key, status_display in status_choices %}
+          <a href="{% url 'my_applications' %}?status={{ status_key }}" 
+             class="btn {% if current_status_filter == status_key %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+            {{ status_display }} ({{ status_counts|dictsort:status_key }})
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Applications List -->
+  {% if applications %}
+    <div class="row">
+      {% for application in applications %}
+        <div class="col-lg-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <!-- Status Badge -->
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge {{ application.get_status_badge_class }} fs-6">
+                  {{ application.get_status_display }}
+                </span>
+                <small class="text-muted">
+                  Applied {{ application.applied_date|timesince }} ago
+                </small>
+              </div>
+              
+              <!-- Job Info -->
+              <h5 class="card-title">
+                <a href="{% url 'job_detail' application.job.pk %}" class="text-decoration-none">
+                  {{ application.job.title }}
+                </a>
+              </h5>
+              <h6 class="card-subtitle mb-2 text-muted">{{ application.job.company }}</h6>
+              
+              <!-- Job Details -->
+              <div class="mb-3">
+                <small class="text-muted">
+                  <i class="fas fa-map-marker-alt"></i> {{ application.job.location }}
+                  <span class="mx-2">•</span>
+                  <i class="fas fa-briefcase"></i> {{ application.job.get_work_type_display }}
+                </small>
+              </div>
+              
+              <!-- Cover Note Preview -->
+              {% if application.cover_note %}
+                <div class="mb-3">
+                  <strong>Your Note:</strong>
+                  <p class="text-muted mb-0">{{ application.cover_note|truncatewords:15 }}</p>
+                </div>
+              {% endif %}
+              
+              <!-- Action Buttons -->
+              <div class="d-flex gap-2">
+                <a href="{% url 'application_detail' application.pk %}" class="btn btn-outline-primary btn-sm">
+                  View Details
+                </a>
+                <a href="{% url 'job_detail' application.job.pk %}" class="btn btn-outline-secondary btn-sm">
+                  View Job
+                </a>
+              </div>
+              
+              <!-- Last Updated -->
+              <small class="text-muted d-block mt-2">
+                Last updated: {{ application.last_updated|date:"M d, Y" }}
+              </small>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <nav aria-label="Applications pagination">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if current_status_filter %}status={{ current_status_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+          {% endif %}
+          
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if current_status_filter %}status={{ current_status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if current_status_filter %}status={{ current_status_filter }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+    
+  {% else %}
+    <!-- No Applications -->
+    <div class="text-center py-5">
+      {% if current_status_filter %}
+        <div style="font-size: 48px;">📋</div>
+        <h3 class="mt-3">No applications with "{{ current_status_filter|title }}" status</h3>
+        <p class="text-muted">Try viewing applications with a different status.</p>
+        <a href="{% url 'my_applications' %}" class="btn btn-primary">View All Applications</a>
+      {% else %}
+        <div style="font-size: 48px;">🚀</div>
+        <h3 class="mt-3">No applications yet</h3>
+        <p class="text-muted">Ready to start your job search? Browse available positions and apply to jobs that match your skills.</p>
+        <a href="{% url 'job_list' %}" class="btn btn-primary">Browse Jobs</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

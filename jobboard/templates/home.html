@@ -3,11 +3,144 @@
 {% block title %}Welcome to JobBoard{% endblock %}
 
 {% block content %}
-<div class="text-center py-5">
-  <h1 class="display-4 fw-bold">Welcome to JobBoard</h1>
-  <p class="lead mb-4">Connecting job seekers with recruiters, one click at a time.</p>
-    {% if not user.is_authenticated %}
-    <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Get Started</a>
-  {% endif %}
+<div class="container py-5">
+  <!-- Hero Section -->
+  <div class="text-center py-5 mb-5">
+    <h1 class="display-4 fw-bold text-primary">Welcome to JobBoard</h1>
+    <p class="lead mb-4">Your gateway to amazing career opportunities. Find jobs, apply with one click, and track your applications.</p>
+    <div class="d-flex gap-3 justify-content-center">
+      <a href="{% url 'job_list' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-search"></i> Browse Jobs
+      </a>
+      {% if not user.is_authenticated %}
+        <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-lg">
+          <i class="fas fa-user-plus"></i> Sign Up
+        </a>
+      {% else %}
+        <a href="{% url 'my_applications' %}" class="btn btn-outline-primary btn-lg">
+          <i class="fas fa-clipboard-list"></i> My Applications
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Features Section -->
+  <div class="row text-center mb-5">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="mb-3" style="font-size: 48px; color: #0d6efd;">
+            <i class="fas fa-search"></i>
+          </div>
+          <h5 class="card-title">Smart Job Search</h5>
+          <p class="card-text">Filter jobs by location, salary, skills, work type, and visa sponsorship to find perfect matches.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="mb-3" style="font-size: 48px; color: #198754;">
+            <i class="fas fa-paper-plane"></i>
+          </div>
+          <h5 class="card-title">One-Click Apply</h5>
+          <p class="card-text">Apply to jobs instantly with your profile information and optional personalized cover notes.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="mb-3" style="font-size: 48px; color: #fd7e14;">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h5 class="card-title">Track Progress</h5>
+          <p class="card-text">Monitor your application status from Applied to Interview to Offer with our tracking dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Quick Stats -->
+  <div class="row text-center mb-5">
+    <div class="col-md-3 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h3 class="mb-0">10+</h3>
+          <small>Active Jobs</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h3 class="mb-0">5+</h3>
+          <small>Companies</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h3 class="mb-0">Remote</h3>
+          <small>Opportunities</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <h3 class="mb-0">$50K+</h3>
+          <small>Average Salary</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- For Job Seekers vs Recruiters -->
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-user"></i> For Job Seekers</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-4">
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Create detailed profiles</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Set privacy controls</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Save jobs for later</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Track application status</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Advanced job filtering</li>
+          </ul>
+          {% if not user.is_authenticated %}
+            <a href="{% url 'signup' %}" class="btn btn-primary w-100">Start Your Job Search</a>
+          {% else %}
+            <a href="{% url 'profile' %}" class="btn btn-outline-primary w-100">View My Profile</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-building"></i> For Recruiters</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-4">
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Post job openings</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Manage applications</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Track candidate progress</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Access candidate profiles</li>
+            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Streamlined hiring process</li>
+          </ul>
+          {% if user.is_staff %}
+            <a href="{% url 'post_job' %}" class="btn btn-success w-100">Post a Job</a>
+          {% else %}
+            <a href="{% url 'admin:index' %}" class="btn btn-outline-success w-100">Admin Portal</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

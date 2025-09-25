@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Apply to {{ job.title }} at {{ job.company }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Header -->
+      <div class="text-center mb-4">
+        <h1 class="h2">Apply for Position</h1>
+        <p class="lead text-muted">{{ job.title }} at {{ job.company }}</p>
+      </div>
+      
+      <!-- Job Summary -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5>Job Summary</h5>
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Location:</strong> {{ job.location }}</p>
+              <p class="mb-1"><strong>Type:</strong> {{ job.get_work_type_display }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Experience:</strong> {{ job.experience_level }}</p>
+              {% if job.salary_min or job.salary_max %}
+                <p class="mb-1"><strong>Salary:</strong> {{ job.salary_range_display }}</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          {% if job.required_skills %}
+            <div class="mt-3">
+              <strong>Required Skills:</strong>
+              <div class="mt-2">
+                {% for skill in job.get_required_skills_list %}
+                  <span class="badge bg-secondary me-1">{{ skill }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Application Form -->
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Your Application</h5>
+        </div>
+        <div class="card-body">
+          <!-- Profile Info Display -->
+          <div class="mb-4 p-3 bg-light rounded">
+            <h6>Your Profile Information</h6>
+            <p class="mb-1"><strong>Name:</strong> {{ user.get_full_name|default:user.username }}</p>
+            <p class="mb-1"><strong>Email:</strong> {{ user.email }}</p>
+            {% if user.profile.headline %}
+              <p class="mb-1"><strong>Headline:</strong> {{ user.profile.headline }}</p>
+            {% endif %}
+            {% if user.profile.location %}
+              <p class="mb-1"><strong>Location:</strong> {{ user.profile.location }}</p>
+            {% endif %}
+            <small class="text-muted">
+              This information will be shared with the employer. 
+              <a href="{% url 'edit_profile' %}" target="_blank">Update your profile</a>
+            </small>
+          </div>
+          
+          <!-- Application Form -->
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+              {{ form.cover_note.label_tag }}
+              {{ form.cover_note }}
+              {% if form.cover_note.errors %}
+                <div class="text-danger mt-1">
+                  {{ form.cover_note.errors }}
+                </div>
+              {% endif %}
+              <small class="form-text text-muted">
+                {{ form.cover_note.help_text }}
+              </small>
+            </div>
+            
+            <!-- Terms -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="terms-agreement" required>
+                <label class="form-check-label" for="terms-agreement">
+                  I confirm that the information provided is accurate and I consent to share my profile 
+                  information with {{ job.company }} for this application.
+                </label>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-paper-plane"></i> Submit Application
+              </button>
+              <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-secondary btn-lg">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Tips -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-header">
+          <h6 class="mb-0">💡 Application Tips</h6>
+        </div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>Mention specific skills from the job posting that you possess</li>
+            <li>Explain why you're interested in this particular role and company</li>
+            <li>Keep your cover note concise but engaging</li>
+            <li>Highlight relevant experience or projects</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

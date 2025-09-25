@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Application: {{ application.job.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-0">Application Details</h1>
+          <p class="text-muted mb-0">{{ application.job.title }} at {{ application.job.company }}</p>
+        </div>
+        <span class="badge {{ application.get_status_badge_class }} fs-6">
+          {{ application.get_status_display }}
+        </span>
+      </div>
+      
+      <!-- Application Timeline -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Application Timeline</h5>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <!-- Applied -->
+            <div class="timeline-item active">
+              <div class="timeline-marker bg-primary"></div>
+              <div class="timeline-content">
+                <h6>Application Submitted</h6>
+                <p class="text-muted mb-0">{{ application.applied_date|date:"M d, Y \a\t g:i A" }}</p>
+              </div>
+            </div>
+            
+            <!-- Review -->
+            <div class="timeline-item {% if application.status != 'applied' %}active{% endif %}">
+              <div class="timeline-marker {% if application.status != 'applied' %}bg-warning{% else %}bg-light{% endif %}"></div>
+              <div class="timeline-content">
+                <h6>Under Review</h6>
+                <p class="text-muted mb-0">
+                  {% if application.status != 'applied' %}
+                    Your application is being reviewed
+                  {% else %}
+                    Waiting for review
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+            
+            <!-- Interview -->
+            <div class="timeline-item {% if application.status == 'interview' or application.status == 'offer' %}active{% endif %}">
+              <div class="timeline-marker {% if application.status == 'interview' or application.status == 'offer' %}bg-info{% else %}bg-light{% endif %}"></div>
+              <div class="timeline-content">
+                <h6>Interview</h6>
+                <p class="text-muted mb-0">
+                  {% if application.status == 'interview' or application.status == 'offer' %}
+                    Interview scheduled or completed
+                  {% else %}
+                    Interview pending
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+            
+            <!-- Final Status -->
+            <div class="timeline-item {% if application.status == 'offer' or application.status == 'closed' %}active{% endif %}">
+              <div class="timeline-marker {% if application.status == 'offer' %}bg-success{% elif application.status == 'closed' %}bg-secondary{% else %}bg-light{% endif %}"></div>
+              <div class="timeline-content">
+                <h6>
+                  {% if application.status == 'offer' %}
+                    Offer Extended
+                  {% elif application.status == 'closed' %}
+                    Application Closed
+                  {% else %}
+                    Final Decision
+                  {% endif %}
+                </h6>
+                <p class="text-muted mb-0">
+                  {% if application.status == 'offer' %}
+                    Congratulations! You've received an offer.
+                  {% elif application.status == 'closed' %}
+                    This application has been closed.
+                  {% else %}
+                    Waiting for final decision
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Your Application -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Your Application</h5>
+        </div>
+        <div class="card-body">
+          <!-- Submitted Info -->
+          <div class="mb-4">
+            <h6>Application Details</h6>
+            <p><strong>Submitted:</strong> {{ application.applied_date|date:"F d, Y \a\t g:i A" }}</p>
+            <p><strong>Last Updated:</strong> {{ application.last_updated|date:"F d, Y \a\t g:i A" }}</p>
+          </div>
+          
+          <!-- Cover Note -->
+          {% if application.cover_note %}
+            <div class="mb-4">
+              <h6>Your Cover Note</h6>
+              <div class="p-3 bg-light rounded">
+                {{ application.cover_note|linebreaksbr }}
+              </div>
+            </div>
+          {% else %}
+            <div class="mb-4">
+              <h6>Cover Note</h6>
+              <p class="text-muted">No cover note was provided with this application.</p>
+            </div>
+          {% endif %}
+          
+          <!-- Profile Info at Time of Application -->
+          <div class="mb-4">
+            <h6>Profile Information</h6>
+            <p><strong>Name:</strong> {{ application.applicant.get_full_name|default:application.applicant.username }}</p>
+            <p><strong>Email:</strong> {{ application.applicant.email }}</p>
+            {% if application.applicant.profile.headline %}
+              <p><strong>Headline:</strong> {{ application.applicant.profile.headline }}</p>
+            {% endif %}
+            {% if application.applicant.profile.location %}
+              <p><strong>Location:</strong> {{ application.applicant.profile.location }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Job Summary -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Job Summary</h5>
+        </div>
+        <div class="card-body">
+          <h6>{{ job.title }}</h6>
+          <p class="text-muted mb-3">{{ job.company }}</p>
+          
+          <p class="mb-1"><strong>Location:</strong> {{ job.location }}</p>
+          <p class="mb-1"><strong>Type:</strong> {{ job.get_work_type_display }}</p>
+          {% if job.salary_min or job.salary_max %}
+            <p class="mb-1"><strong>Salary:</strong> {{ job.salary_range_display }}</p>
+          {% endif %}
+          
+          <div class="mt-3">
+            <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-primary w-100">
+              View Full Job Posting
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a href="{% url 'my_applications' %}" class="btn btn-outline-primary">
+              <i class="fas fa-arrow-left"></i> Back to Applications
+            </a>
+            
+            {% if job.contact_email %}
+              <a href="mailto:{{ job.contact_email }}" class="btn btn-outline-secondary">
+                <i class="fas fa-envelope"></i> Contact Employer
+              </a>
+            {% endif %}
+            
+            <a href="{% url 'job_list' %}" class="btn btn-outline-secondary">
+              <i class="fas fa-search"></i> Browse More Jobs
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tips -->
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h6 class="mb-0">💡 Next Steps</h6>
+        </div>
+        <div class="card-body">
+          <small>
+            {% if application.status == 'applied' %}
+              <ul class="mb-0">
+                <li>Your application has been submitted successfully</li>
+                <li>Check back regularly for status updates</li>
+                <li>Continue applying to other positions</li>
+              </ul>
+            {% elif application.status == 'review' %}
+              <ul class="mb-0">
+                <li>Your application is being reviewed by the hiring team</li>
+                <li>Prepare for potential interview questions</li>
+                <li>Research more about the company</li>
+              </ul>
+            {% elif application.status == 'interview' %}
+              <ul class="mb-0">
+                <li>Prepare for your interview</li>
+                <li>Review the job requirements</li>
+                <li>Prepare questions about the role and company</li>
+              </ul>
+            {% elif application.status == 'offer' %}
+              <ul class="mb-0">
+                <li>Congratulations on your offer!</li>
+                <li>Review the offer details carefully</li>
+                <li>Don't hesitate to negotiate if needed</li>
+              </ul>
+            {% elif application.status == 'closed' %}
+              <ul class="mb-0">
+                <li>Thank you for your interest</li>
+                <li>Continue applying to other positions</li>
+                <li>Use this experience to improve future applications</li>
+              </ul>
+            {% endif %}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 25px;
+  width: 2px;
+  height: calc(100% + 5px);
+  background-color: #e9ecef;
+}
+
+.timeline-item.active:not(:last-child)::before {
+  background-color: #0d6efd;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -30px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-item.active .timeline-marker {
+  box-shadow: 0 0 0 2px #0d6efd;
+}
+
+.timeline-content h6 {
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+</style>
+{% endblock %}

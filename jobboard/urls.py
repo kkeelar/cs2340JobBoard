@@ -26,6 +26,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home, name="home"),          # landing page
     path("accounts/", include("accounts.urls")),  # all accounts routes
-    # later: path("jobs/", include("jobs.urls")),
+    path("jobs/", include("jobs.urls")),
     # later: path("recruiters/", include("recruiters.urls")),
 ]

@@ -1,0 +1,6 @@
+# Core framework
+Django>=5.0,<5.1
+
+# Time zone database for Windows (used by Python's zoneinfo)
+tzdata>=2024.1; platform_system == "Windows"
+
