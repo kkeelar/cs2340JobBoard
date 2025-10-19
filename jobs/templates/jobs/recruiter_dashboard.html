@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Recruiter Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-4">Recruiter Dashboard</h1>
+
+  <div class="row mb-4">
+    <div class="col-md-6 col-lg-3 mb-3">
+      <div class="card text-center bg-primary text-white">
+        <div class="card-body">
+          <h4>{{ total_jobs }}</h4>
+          <small>Jobs Posted</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+      <div class="card text-center bg-success text-white">
+        <div class="card-body">
+          <h4>{{ total_applicants }}</h4>
+          <small>Total Applicants</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Your Job Listings</h4>
+    <a href="{% url 'post_job' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Post New Job
+    </a>
+  </div>
+  {% for job in jobs %}
+  <div class="list-group-item list-group-item-action mb-2 shadow-sm rounded">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1">{{ job.title }}</h5>
+        <p class="mb-1 text-muted">{{ job.company }} — {{ job.location }}</p>
+        <small>{{ job.applications.count }} applicants</small>
+      </div>
+      <div class="text-end">
+        <a href="{% url 'application_pipeline' job.pk %}" class="btn btn-sm btn-outline-primary">View Applicants</a>
+        <a href="{% url 'edit_job' job.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+</div>
+{% endblock %}

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from accounts.models import Profile
 
 
 class Job(models.Model):
@@ -42,7 +43,7 @@ class Job(models.Model):
     
     # Contact info
     contact_email = models.EmailField()
-    posted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posted_jobs')
+    posted_by = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='posted_jobs')
     
     class Meta:
         ordering = ['-posted_date']

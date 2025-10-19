@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+
+{% block title %}Applicant Pipeline - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Applicant Pipeline – {{ job.title }}</h2>
+  <div class="row">
+    {% for key, label in status_choices %}
+      <div class="col-md-2">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light text-center fw-bold">{{ label }}</div>
+          <div class="card-body" id="col-{{ key }}">
+            {% for app in applications_by_status|get_item:key %}
+              <div class="card mb-2 border-primary small">
+                <div class="card-body p-2">
+                  <strong>{{ app.applicant.username }}</strong><br>
+                  <small>{{ app.applied_date|date:"M d" }}</small>
+                  <div class="mt-1">
+                    <form method="post" action="{% url 'update_application_status' app.pk %}">
+                      {% csrf_token %}
+                      <div class="input-group input-group-sm">
+                        <select name="status" class="form-select form-select-sm">
+                            {% for s, l in status_choices %}
+                            <option value="{{ s }}" {% if s == app.status %}selected{% endif %}>{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm">Move</button>
+                        </div>
+
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <small class="text-muted">No applicants</small>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <a href="{% url 'recruiter_dashboard' %}" class="btn btn-secondary mt-4">Back</a>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('select[name="status"]').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const form = e.target.closest('form');
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: {"X-Requested-With": "XMLHttpRequest"},
+      });
+      if (response.ok) {
+        console.log("Status updated successfully");
+      } else {
+        alert("Error updating status");
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

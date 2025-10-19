@@ -1,7 +1,20 @@
 from django import forms
 from django.forms import inlineformset_factory
 from .models import Profile, Education, WorkExperience
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
+
+class CustomSignupForm(UserCreationForm):
+    ROLE_CHOICES = [
+        ('seeker', 'Job Seeker'),
+        ('recruiter', 'Recruiter'),
+    ]
+    role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.RadioSelect)
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "password1", "password2", "role")
 
 class ProfileForm(forms.ModelForm):
     class Meta:

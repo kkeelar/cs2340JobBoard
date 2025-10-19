@@ -14,26 +14,36 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-      <div class="navbar-nav me-auto">
-        <a class="nav-link" href="{% url 'job_list' %}">Browse Jobs</a>
-        {% if user.is_authenticated %}
-          <a class="nav-link" href="{% url 'my_applications' %}">My Applications</a>
-          <a class="nav-link" href="{% url 'saved_jobs' %}">Saved Jobs</a>
-        {% endif %}
-      </div>
-      <div class="navbar-nav ms-auto">
-        {% if user.is_authenticated %}
-          <a class="nav-link" href="{% url 'profile' %}">My Profile</a>
-          {% if user.is_staff %}
-            <a class="nav-link" href="{% url 'post_job' %}">Post Job</a>
-          {% endif %}
-          <div class="vr bg-white mx-2 d-none d-lg-block"></div>
-          <a class="nav-link" href="{% url 'logout' %}">Logout ({{ user.username }})</a>
-        {% else %}
-          <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
-          <a class="nav-link" href="{% url 'login' %}">Login</a>
-        {% endif %}
-      </div>
+     <div class="navbar-nav me-auto">
+  {% if user.is_authenticated %}
+    {% if user.profile.role == "recruiter" %}
+      <!-- Recruiter nav -->
+      <a class="nav-link" href="{% url 'recruiter_dashboard' %}">Dashboard</a>
+      <a class="nav-link" href="{% url 'post_job' %}">Post Job</a>
+      <a class="nav-link" href="#">Candidate Search</a>  <!-- placeholder -->
+    {% else %}
+      <!-- Job seeker nav -->
+      <a class="nav-link" href="{% url 'job_list' %}">Browse Jobs</a>
+      <a class="nav-link" href="{% url 'my_applications' %}">My Applications</a>
+      <a class="nav-link" href="{% url 'saved_jobs' %}">Saved Jobs</a>
+    {% endif %}
+  {% else %}
+    <!-- Unauthenticated visitor -->
+    <a class="nav-link" href="{% url 'job_list' %}">Browse Jobs</a>
+  {% endif %}
+</div>
+
+<div class="navbar-nav ms-auto">
+  {% if user.is_authenticated %}
+    <a class="nav-link" href="{% url 'profile' %}">My Profile</a>
+    <div class="vr bg-white mx-2 d-none d-lg-block"></div>
+    <a class="nav-link" href="{% url 'logout' %}">Logout ({{ user.username }})</a>
+  {% else %}
+    <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
+    <a class="nav-link" href="{% url 'login' %}">Login</a>
+  {% endif %}
+</div>
+
     </div>
   </div>
 </nav>
