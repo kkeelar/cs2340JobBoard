@@ -11,6 +11,8 @@ urlpatterns = [
 
     path("recruiter/dashboard/", views.recruiter_dashboard, name="recruiter_dashboard"),
 
+    path("recruiter/search/", views.candidate_search, name="candidate_search"),
+
 
 
     # password management
@@ -23,5 +25,6 @@ urlpatterns = [
     path("me/", views.profile, name="profile"),  # owner view
     path("edit/", views.edit_profile, name="edit_profile"),
     path("u/<str:username>/", views.profile_detail, name="profile_detail"),  # public view
+
 
 ]

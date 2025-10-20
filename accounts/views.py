@@ -157,3 +157,50 @@ def recruiter_dashboard(request):
         return redirect("profile")  # block seekers
 
     return render(request, "accounts/recruiter_dashboard.html", {"profile": profile})
+
+from django.db.models import Q
+
+@login_required
+def candidate_search(request):
+    profile = request.user.profile
+    if profile.role != "recruiter":
+        return redirect("profile")
+
+    query = request.GET.get("q", "")
+    location = request.GET.get("location", "")
+    skill = request.GET.get("skill", "")
+
+    candidates = Profile.objects.filter(role="seeker", is_public=True)
+
+    if query:
+        candidates = candidates.filter(
+            Q(user__username__icontains=query) |
+            Q(headline__icontains=query) |
+            Q(bio__icontains=query)
+        )
+
+    if location:
+        candidates = candidates.filter(location__icontains=location)
+
+    if skill:
+        candidates = candidates.filter(skills__icontains=skill)
+
+    if skill:
+        candidates = candidates.filter(skills__icontains=skill)
+
+    for c in candidates:
+        raw_skills = c.skills or ""
+        # Handle both comma-separated and space-separated input
+        if "," in raw_skills:
+            skills = raw_skills.split(",")
+        else:
+            skills = raw_skills.split()
+        c.skill_list = [s.strip() for s in skills if s.strip()]
+
+    return render(request, "accounts/candidate_search.html", {
+        "candidates": candidates,
+        "query": query,
+        "location": location,
+        "skill": skill,
+    })
+
