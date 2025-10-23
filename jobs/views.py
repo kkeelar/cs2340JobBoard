@@ -10,6 +10,10 @@ from django.views.decorators.http import require_POST
 
 from .models import Job, JobApplication, SavedJob
 from .forms import JobSearchForm, JobApplicationForm, JobPostForm, ApplicationStatusUpdateForm
+from .recommendations import (
+    format_skills_for_display,
+    recommend_jobs_for_profile,
+)
 
 @login_required
 def recruiter_dashboard(request):
@@ -198,6 +202,29 @@ def my_applications(request):
         'status_choices': JobApplication.STATUS_CHOICES,
     }
     return render(request, 'jobs/my_applications.html', context)
+
+
+@login_required
+def recommended_jobs(request):
+    """Skill-based recommendations for job seekers."""
+    profile = getattr(request.user, "profile", None)
+    if not profile:
+        messages.error(request, "Please complete your profile to receive recommendations.")
+        return redirect("job_list")
+
+    if profile.role == "recruiter":
+        messages.info(request, "Recommendations are only available for job seekers.")
+        return redirect("recruiter_dashboard")
+
+    recommendations = recommend_jobs_for_profile(profile)
+    user_skills = format_skills_for_display(profile.skills)
+
+    context = {
+        "recommendations": recommendations,
+        "user_skills": user_skills,
+        "has_skills": bool(user_skills),
+    }
+    return render(request, "jobs/recommended_jobs.html", context)
 
 
 @login_required

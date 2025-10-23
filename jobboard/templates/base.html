@@ -26,6 +26,7 @@
     {% else %}
       <!-- Job seeker nav -->
       <a class="nav-link" href="{% url 'job_list' %}">Browse Jobs</a>
+      <a class="nav-link" href="{% url 'recommended_jobs' %}">Recommended</a>
       <a class="nav-link" href="{% url 'my_applications' %}">My Applications</a>
       <a class="nav-link" href="{% url 'saved_jobs' %}">Saved Jobs</a>
     {% endif %}
