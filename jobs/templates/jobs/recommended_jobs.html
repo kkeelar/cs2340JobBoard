@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Recommended Jobs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h2 mb-1">Recommended Jobs</h1>
+      {% if has_skills %}
+        <p class="text-muted mb-0">Based on your skills: 
+          {% for skill in user_skills %}
+            <span class="badge bg-secondary me-1">{{ skill }}</span>
+          {% endfor %}
+        </p>
+      {% else %}
+        <p class="text-muted mb-0">Add skills to your profile to receive better recommendations.</p>
+      {% endif %}
+    </div>
+    <a href="{% url 'job_list' %}" class="btn btn-outline-primary">
+      <i class="fas fa-search"></i> Browse All Jobs
+    </a>
+  </div>
+
+  {% if recommendations %}
+    <div class="row">
+      {% for rec in recommendations %}
+        {% with job=rec.job %}
+        <div class="col-lg-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title mb-0">
+                  <a class="text-decoration-none" href="{% url 'job_detail' job.pk %}">{{ job.title }}</a>
+                </h5>
+                <span class="badge bg-primary">Match: {{ rec.score }}</span>
+              </div>
+              <h6 class="card-subtitle text-muted mb-3">{{ job.company }}</h6>
+              <p class="mb-2 text-muted">
+                <i class="fas fa-map-marker-alt"></i> {{ job.location }} • {{ job.get_work_type_display }}
+              </p>
+
+              <div class="mb-3">
+                <strong>Matched Skills:</strong>
+                {% for skill in rec.matched_skills %}
+                  <span class="badge bg-success me-1">{{ skill }}</span>
+                {% endfor %}
+              </div>
+
+              <p class="text-muted">{{ job.description|truncatewords:25 }}</p>
+
+              <div class="d-flex gap-2">
+                <a href="{% url 'job_detail' job.pk %}" class="btn btn-primary btn-sm">View Job</a>
+                <a href="{% url 'apply_to_job' job.pk %}" class="btn btn-outline-primary btn-sm">Quick Apply</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="card-body text-center py-5">
+        <div style="font-size: 48px;" class="mb-3">🤔</div>
+        {% if has_skills %}
+          <h4 class="mb-2">No close matches yet</h4>
+          <p class="text-muted mb-0">Try broadening your skills or check back later as new jobs are posted.</p>
+        {% else %}
+          <h4 class="mb-2">No skills on your profile</h4>
+          <p class="text-muted mb-0">Add skills to your profile so we can recommend relevant jobs.</p>
+          <a href="{% url 'edit_profile' %}" class="btn btn-primary mt-3">Update Profile</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

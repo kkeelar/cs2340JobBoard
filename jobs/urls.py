@@ -14,6 +14,9 @@ urlpatterns = [
     path('my-applications/', views.my_applications, name='my_applications'),
     path('applications/<int:pk>/', views.application_detail, name='application_detail'),
     
+    # Recommendations
+    path('recommended/', views.recommended_jobs, name='recommended_jobs'),
+    
     # Saved jobs
     path('<int:pk>/save/', views.save_job, name='save_job'),
     path('saved/', views.saved_jobs, name='saved_jobs'),
