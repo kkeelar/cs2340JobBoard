@@ -27,6 +27,30 @@ class JobSearchForm(forms.Form):
         label='Location'
     )
 
+    location_lat = forms.FloatField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+    location_lon = forms.FloatField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+    location_radius = forms.IntegerField(
+        required=False,
+        min_value=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': 1,
+            'max': 250,
+            'step': 1,
+        }),
+        label='Radius (miles)',
+        initial=25,
+        help_text='Applies when a suggested address or your location is selected.',
+    )
+
     # Skills filter
     skills = forms.CharField(
         required=False,

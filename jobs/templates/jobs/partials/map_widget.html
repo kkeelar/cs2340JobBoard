@@ -1,21 +1,28 @@
 {# jobs/templates/jobs/partials/map_widget.html #}
-<div class="card shadow-sm mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h6 class="mb-0">🗺️ Jobs Near You</h6>
-    <div class="d-flex align-items-center gap-2">
-      <label class="mb-0 small">Radius (mi)
-        <input id="jb-radius" type="number" min="1" max="100" step="1"
-               value="{{ preferred_radius|default:10 }}" style="width:5rem; margin-left:6px;">
-      </label>
-      <button id="jb-useme" type="button" class="btn btn-sm btn-outline-primary">Use My Location</button>
-    </div>
-  </div>
+<div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
-    <div id="jb-map" style="height: 260px; border-radius: 8px;"></div>
-    <div class="text-muted small mt-2" id="jb-status"></div>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+      <div>
+        <h5 class="mb-1">🗺️ Jobs Near You</h5>
+        <p class="text-muted mb-0">Plot jobs with full addresses and explore opportunities near your location.</p>
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="input-group input-group-sm" style="width: 12rem;">
+          <span class="input-group-text">Radius (mi)</span>
+          <input id="jb-radius" type="number" min="1" max="250" step="1"
+                 value="{{ form.location_radius.value|default:form.location_radius.initial|default:25 }}" class="form-control">
+        </div>
+        <button id="jb-useme" type="button" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-location-arrow me-1"></i>Use My Location
+        </button>
+      </div>
+    </div>
 
-    <details class="mt-2">
-      <summary class="small">Recommended for you</summary>
+    <div id="jb-map" class="rounded-4 shadow-sm" style="height: 360px; overflow: hidden;"></div>
+    <div class="text-muted small mt-2" id="jb-status">Loading map…</div>
+
+    <details class="mt-3">
+      <summary class="small fw-semibold text-uppercase text-muted">Recommendations</summary>
       <div id="jb-recs-body" class="mt-2 small text-body-secondary">
         {% if user.is_authenticated %}
           Loading recommendations…
@@ -34,8 +41,10 @@
   const mapEl = document.getElementById('jb-map');
   if (!mapEl) return;
 
-  const defaultLat = 33.7756, defaultLon = -84.3963; // ATL default
-  const map = L.map('jb-map', { zoomControl: true }).setView([defaultLat, defaultLon], 11);
+  const defaultLat = 33.7756;
+  const defaultLon = -84.3963; // Atlanta default
+  const map = L.map('jb-map', { zoomControl: true, attributionControl: true })
+               .setView([defaultLat, defaultLon], 11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
@@ -43,34 +52,103 @@
   const overlays = [];
   const statusEl = document.getElementById('jb-status');
   const radiusInput = document.getElementById('jb-radius');
+  const formLatField = document.getElementById('id_location_lat');
+  const formLonField = document.getElementById('id_location_lon');
+  const formRadiusField = document.getElementById('id_location_radius');
+
+  const normaliseNumber = (value) => {
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  if (formRadiusField && radiusInput && formRadiusField.value) {
+    radiusInput.value = formRadiusField.value;
+  } else if (radiusInput && !radiusInput.value) {
+    radiusInput.value = '25';
+  }
+
   const clearOverlays = () => { overlays.forEach(o => map.removeLayer(o)); overlays.length = 0; };
 
   async function fetchJSON(url) {
-    const r = await fetch(url, { credentials: 'same-origin' });
-    if (!r.ok) throw new Error('Request failed');
-    return r.json();
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Request failed');
+    return response.json();
   }
 
-  async function loadJobs(lat=null, lon=null, radius=null) {
-    const url = new URL("{% url 'jobs_api' %}", window.location.origin);
-    if (lat != null && lon != null && radius != null) {
-      url.searchParams.set('lat', lat);
-      url.searchParams.set('lon', lon);
-      url.searchParams.set('radius_miles', radius);
-    }
-    const data = await fetchJSON(url);
-    clearOverlays();
+  function formatPopup(job) {
+    const escape = (s = '') => ('' + s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+    return `
+      <div class="map-popup">
+        <strong>${escape(job.title)}</strong>
+        ${job.company ? `<div class="text-muted">${escape(job.company)}</div>` : ''}
+        ${job.location ? `<div class="small text-muted">${escape(job.location)}</div>` : ''}
+        ${job.distance_miles ? `<div class="badge bg-primary-subtle text-primary-emphasis mt-2">${job.distance_miles} mi away</div>` : ''}
+        <div class="mt-2">
+          <a href="${job.url}" class="btn btn-sm btn-outline-primary">View Details</a>
+        </div>
+      </div>`;
+  }
 
-    if (lat != null && lon != null && radius != null) {
-      const circle = L.circle([lat, lon], { radius: radius * 1609.34 });
-      circle.addTo(map); overlays.push(circle); map.setView([lat, lon], 11);
-    }
+  async function loadJobs(lat = null, lon = null, radius = null) {
+    const latNum = normaliseNumber(lat);
+    const lonNum = normaliseNumber(lon);
+    let radiusNum = normaliseNumber(radius ?? (radiusInput ? radiusInput.value : null));
+    const effectiveRadius = (latNum !== null && lonNum !== null) ? (radiusNum ?? 25) : radiusNum;
 
-    (data.jobs || []).forEach(j => {
-      const m = L.marker([j.lat, j.lon]).addTo(map)
-        .bindPopup(`<strong>${j.title}</strong><br>${j.company || ''}${j.distance_miles ? `<br>${j.distance_miles} mi` : ''}`);
-      overlays.push(m);
-    });
+    try {
+      statusEl.textContent = 'Loading jobs…';
+      const url = new URL("{% url 'jobs_api' %}", window.location.origin);
+      if (latNum !== null && lonNum !== null && effectiveRadius !== null) {
+        url.searchParams.set('lat', latNum);
+        url.searchParams.set('lon', lonNum);
+        url.searchParams.set('radius_miles', effectiveRadius);
+      }
+
+      const data = await fetchJSON(url);
+      clearOverlays();
+
+      if (latNum !== null && lonNum !== null && effectiveRadius !== null) {
+        const circle = L.circle([latNum, lonNum], {
+          radius: effectiveRadius * 1609.34,
+          color: '#0d6efd',
+          fillColor: '#0d6efd',
+          fillOpacity: 0.08,
+          weight: 1.2,
+        });
+        circle.addTo(map);
+        overlays.push(circle);
+        map.setView([latNum, lonNum], effectiveRadius <= 10 ? 12 : 11);
+      } else {
+        map.setView([defaultLat, defaultLon], 11);
+      }
+
+      const jobs = data.jobs || [];
+      if (!jobs.length) {
+        statusEl.textContent = latNum !== null ? 'No jobs found within this radius.' : 'No jobs with map coordinates yet.';
+      } else {
+        jobs.forEach(job => {
+          const marker = L.marker([job.lat, job.lon]).addTo(map).bindPopup(formatPopup(job));
+          overlays.push(marker);
+        });
+        if (latNum !== null && effectiveRadius !== null) {
+          statusEl.textContent = `Showing ${jobs.length} job${jobs.length === 1 ? '' : 's'} within ${effectiveRadius} miles.`;
+        } else {
+          statusEl.textContent = `Showing ${jobs.length} job${jobs.length === 1 ? '' : 's'} with map data.`;
+        }
+      }
+
+      if (latNum !== null && formLatField) formLatField.value = latNum;
+      if (lonNum !== null && formLonField) formLonField.value = lonNum;
+      if (effectiveRadius !== null) {
+        if (formRadiusField) formRadiusField.value = effectiveRadius;
+        if (radiusInput) radiusInput.value = effectiveRadius;
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'Unable to load map data right now.';
+    }
   }
 
   async function loadRecs() {
@@ -79,29 +157,94 @@
     try {
       const data = await fetchJSON("{% url 'recommendations_api' %}");
       const recs = data.recommendations || [];
-      if (!recs.length) { box.textContent = 'No recommendations yet.'; return; }
-      box.innerHTML = recs.slice(0, 8).map(r => `
-        <div class="py-1 border-bottom">
-          <strong>${r.title}</strong>${r.company ? ' @ ' + r.company : ''}
-          <div class="small text-muted">match score: ${r.skill_overlap ?? 0}</div>
+      if (!recs.length) {
+        box.textContent = 'No recommendations yet. Update your skills to see matches.';
+        return;
+      }
+      box.innerHTML = recs.slice(0, 6).map(r => `
+        <div class="py-2 border-bottom border-light-subtle">
+          <a href="${r.url}" class="text-decoration-none fw-semibold d-block">${r.title}</a>
+          ${r.company ? `<div class="small text-muted">${r.company}</div>` : ''}
+          ${r.matched_skills?.length ? `<div class="small">Matched skills: ${r.matched_skills.join(', ')}</div>` : ''}
+          <span class="badge bg-success-subtle text-success-emphasis mt-1">Score ${r.score}</span>
         </div>`).join('');
-    } catch {
-      /* unauth users may 403 if @login_required; safe to ignore */
+    } catch (err) {
+      console.warn(err);
+      box.textContent = 'Unable to load recommendations.';
     }
   }
 
-  document.getElementById('jb-useme').addEventListener('click', () => {
-    const r = parseInt(radiusInput.value || '10', 10);
-    if (!navigator.geolocation) { statusEl.textContent = 'Geolocation not supported.'; return; }
-    statusEl.textContent = 'Locating…';
-    navigator.geolocation.getCurrentPosition(
-      pos => { statusEl.textContent = ''; loadJobs(pos.coords.latitude, pos.coords.longitude, r); },
-      () => { statusEl.textContent = 'Location denied. Showing all jobs.'; loadJobs(); }
-    );
+  const radiusChangeHandler = () => {
+    if (!radiusInput) return;
+    const radiusVal = normaliseNumber(radiusInput.value);
+    if (formRadiusField && radiusVal !== null) formRadiusField.value = radiusVal;
+    const latVal = normaliseNumber(formLatField ? formLatField.value : null);
+    const lonVal = normaliseNumber(formLonField ? formLonField.value : null);
+    if (latVal !== null && lonVal !== null && radiusVal !== null) {
+      loadJobs(latVal, lonVal, radiusVal);
+    }
+  };
+
+  if (radiusInput) {
+    radiusInput.addEventListener('change', radiusChangeHandler);
+    radiusInput.addEventListener('keyup', radiusChangeHandler);
+  }
+
+  const locatorBtn = document.getElementById('jb-useme');
+  if (locatorBtn) {
+    locatorBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        statusEl.textContent = 'Geolocation not supported by this browser.';
+        return;
+      }
+      const radiusVal = normaliseNumber(radiusInput ? radiusInput.value : null) ?? 25;
+      statusEl.textContent = 'Locating…';
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          statusEl.textContent = '';
+          if (formLatField) formLatField.value = pos.coords.latitude;
+          if (formLonField) formLonField.value = pos.coords.longitude;
+          if (formRadiusField) formRadiusField.value = radiusVal;
+          if (radiusInput) radiusInput.value = radiusVal;
+          loadJobs(pos.coords.latitude, pos.coords.longitude, radiusVal);
+        },
+        () => {
+          statusEl.textContent = 'Location denied. Showing all jobs with coordinates.';
+          loadJobs();
+        }
+      );
+    });
+  }
+
+  window.addEventListener('jobs:location-filter', (event) => {
+    const detail = event.detail || {};
+    const latVal = normaliseNumber(detail.lat);
+    const lonVal = normaliseNumber(detail.lon);
+    const radiusVal = normaliseNumber(detail.radius ?? (radiusInput ? radiusInput.value : null));
+
+    if (radiusVal !== null) {
+      if (radiusInput) radiusInput.value = radiusVal;
+      if (formRadiusField) formRadiusField.value = radiusVal;
+    }
+
+    if (latVal !== null && lonVal !== null) {
+      loadJobs(latVal, lonVal, radiusVal);
+    } else {
+      if (formLatField) formLatField.value = '';
+      if (formLonField) formLonField.value = '';
+      loadJobs();
+    }
   });
 
-  // initial load
-  loadJobs();   // markers will appear once lat/lon fields exist
+  const initLat = normaliseNumber(formLatField ? formLatField.value : null);
+  const initLon = normaliseNumber(formLonField ? formLonField.value : null);
+  const initRadius = normaliseNumber(formRadiusField ? formRadiusField.value : (radiusInput ? radiusInput.value : null));
+  if (initLat !== null && initLon !== null) {
+    loadJobs(initLat, initLon, initRadius);
+  } else {
+    loadJobs();
+  }
+
   loadRecs();
 })();
 </script>

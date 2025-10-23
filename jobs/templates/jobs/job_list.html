@@ -3,74 +3,85 @@
 
 {% block content %}
 <div class="container py-4">
-  <div class="row">
+  <div class="row g-4 align-items-start">
     <!-- Search Filters Sidebar -->
-    <div class="col-lg-3 mb-4">
-      <div class="card shadow-sm">
+    <div class="col-12 col-xl-3">
+      <div class="card shadow-sm position-sticky" style="top: 1rem; z-index: 1020;">
         <div class="card-header">
           <h5 class="mb-0">🔍 Filter Jobs</h5>
         </div>
         <div class="card-body">
           <form method="get" id="job-search-form">
-            <!-- Search Query -->
-            <div class="mb-3">
-              {{ form.search.label_tag }}
-              {{ form.search }}
-            </div>
-
-            <!-- Location -->
-            <div class="mb-3">
-              {{ form.location.label_tag }}
-              {{ form.location }}
-            </div>
-
-            <!-- Skills -->
-            <div class="mb-3">
-              {{ form.skills.label_tag }}
-              {{ form.skills }}
-              <small class="form-text text-muted">{{ form.skills.help_text }}</small>
-            </div>
-
-            <!-- Salary Range -->
-            <div class="mb-3">
-              <label class="form-label">Salary Range</label>
-              <div class="row">
-                <div class="col-6">
-                  {{ form.salary_min }}
-                  <small class="form-text text-muted">Min</small>
+            <div class="row g-3">
+              <div class="col-12">
+                {{ form.search.label_tag }}
+                {{ form.search }}
+              </div>
+              <div class="col-12 col-sm-6 col-xl-12">
+                {{ form.location.label_tag }}
+                <div class="input-group">
+                  {{ form.location }}
+                  <button type="button" class="btn btn-outline-secondary" id="filter-location-find" title="Search address">
+                    <i class="fas fa-location-crosshairs"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" id="filter-location-clear" title="Clear location">
+                    <i class="fas fa-xmark"></i>
+                  </button>
                 </div>
-                <div class="col-6">
-                  {{ form.salary_max }}
-                  <small class="form-text text-muted">Max</small>
+                <datalist id="filter-address-suggestions"></datalist>
+                {{ form.location_lat }}
+                {{ form.location_lon }}
+                <div class="small text-muted mt-1" id="filter-location-status"></div>
+              </div>
+              <div class="col-12 col-sm-6 col-xl-12">
+                {{ form.location_radius.label_tag }}
+                {{ form.location_radius }}
+                <small class="form-text text-muted">{{ form.location_radius.help_text }}</small>
+              </div>
+              <div class="col-12 col-sm-6 col-xl-12">
+                {{ form.skills.label_tag }}
+                {{ form.skills }}
+                <small class="form-text text-muted">{{ form.skills.help_text }}</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-1">Salary Range</label>
+                <div class="row g-2">
+                  <div class="col-6">
+                    {{ form.salary_min }}
+                    <small class="form-text text-muted">Min</small>
+                  </div>
+                  <div class="col-6">
+                    {{ form.salary_max }}
+                    <small class="form-text text-muted">Max</small>
+                  </div>
                 </div>
               </div>
+              <div class="col-12">
+                {{ form.work_type.label_tag }}
+                {{ form.work_type }}
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.visa_sponsorship }}
+                  {{ form.visa_sponsorship.label_tag }}
+                </div>
+              </div>
+              <div class="col-12 d-grid">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'job_list' %}" class="btn btn-outline-secondary mt-2">Clear All</a>
+              </div>
             </div>
-
-            <!-- Work Type -->
-            <div class="mb-3">
-              {{ form.work_type.label_tag }}
-              {{ form.work_type }}
-            </div>
-
-            <!-- Visa Sponsorship -->
-            <div class="mb-3 form-check">
-              {{ form.visa_sponsorship }}
-              {{ form.visa_sponsorship.label_tag }}
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
-            <a href="{% url 'job_list' %}" class="btn btn-outline-secondary w-100 mt-2">Clear All</a>
           </form>
         </div>
       </div>
     </div>
 
-    {% include "jobs/partials/map_widget.html" %}
+    <!-- Map + Job Results -->
+    <div class="col-12 col-xl-9">
+      {% include "jobs/partials/map_widget.html" %}
 
-    <!-- Job Results -->
-    <div class="col-lg-9">
       <!-- Results Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 class="mb-0">Job Opportunities</h2>
           <p class="text-muted mb-0">{{ total_jobs }} job{{ total_jobs|pluralize }} found</p>
@@ -124,6 +135,13 @@
                       {% endif %}
                     </small>
                   </div>
+                  {% if job.search_distance %}
+                    <div class="mb-3">
+                      <span class="badge bg-primary-subtle text-primary-emphasis">
+                        {{ job.search_distance }} mi away
+                      </span>
+                    </div>
+                  {% endif %}
 
                   <!-- Salary -->
                   {% if job.salary_min or job.salary_max %}
@@ -222,6 +240,177 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const locationInput = document.getElementById('id_location');
+  const latInput = document.getElementById('id_location_lat');
+  const lonInput = document.getElementById('id_location_lon');
+  const radiusField = document.getElementById('id_location_radius');
+  const suggestionsList = document.getElementById('filter-address-suggestions');
+  const statusEl = document.getElementById('filter-location-status');
+  const findBtn = document.getElementById('filter-location-find');
+  const clearBtn = document.getElementById('filter-location-clear');
+
+  if (!locationInput || !latInput || !lonInput || !suggestionsList) {
+    return;
+  }
+
+  locationInput.setAttribute('list', 'filter-address-suggestions');
+
+  let debounceTimer = null;
+  let lastResults = [];
+
+  const setStatus = (message) => {
+    if (statusEl) statusEl.textContent = message || '';
+  };
+
+  const clearSuggestions = () => {
+    suggestionsList.innerHTML = '';
+    lastResults = [];
+  };
+
+  const normaliseNumber = (value) => {
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const broadcastLocation = (lat, lon) => {
+    const detail = {};
+    if (typeof lat === 'number' && typeof lon === 'number' && !Number.isNaN(lat) && !Number.isNaN(lon)) {
+      detail.lat = lat;
+      detail.lon = lon;
+      const radiusVal = normaliseNumber(radiusField ? radiusField.value : null);
+      if (radiusVal !== null) detail.radius = radiusVal;
+    }
+    window.dispatchEvent(new CustomEvent('jobs:location-filter', { detail }));
+  };
+
+  const applyResult = (result) => {
+    if (!result) {
+      latInput.value = '';
+      lonInput.value = '';
+      broadcastLocation();
+      return;
+    }
+    latInput.value = result.lat;
+    lonInput.value = result.lon;
+    setStatus('Filtering by distance.');
+    broadcastLocation(parseFloat(result.lat), parseFloat(result.lon));
+  };
+
+  async function lookup(query) {
+    const trimmed = (query || '').trim();
+    if (trimmed.length < 3) {
+      clearSuggestions();
+      if (!trimmed) setStatus('');
+      return;
+    }
+    setStatus('Searching…');
+    try {
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('format', 'jsonv2');
+      url.searchParams.set('addressdetails', '0');
+      url.searchParams.set('limit', '8');
+      url.searchParams.set('q', trimmed);
+      const response = await fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Lookup failed');
+      const data = await response.json();
+      lastResults = data.map(entry => ({
+        label: entry.display_name,
+        lat: parseFloat(entry.lat),
+        lon: parseFloat(entry.lon),
+      }));
+      suggestionsList.innerHTML = lastResults.map(result =>
+        `<option value="${result.label.replace(/"/g, '&quot;')}"></option>`
+      ).join('');
+      setStatus(lastResults.length ? 'Select a suggestion to enable distance filtering.' : 'No matches found.');
+    } catch (error) {
+      console.error(error);
+      setStatus('Unable to look up that location right now.');
+    }
+  }
+
+  const handleSelection = () => {
+    const value = (locationInput.value || '').trim();
+    if (!value) {
+      latInput.value = '';
+      lonInput.value = '';
+      setStatus('');
+      broadcastLocation();
+      return;
+    }
+    let match = lastResults.find(result => result.label === value);
+    if (!match && lastResults.length) {
+      match = lastResults[0];
+    }
+    if (match) {
+      applyResult(match);
+    } else {
+      latInput.value = '';
+      lonInput.value = '';
+      setStatus('Enter a location and pick a suggestion to filter by distance.');
+      broadcastLocation();
+    }
+  };
+
+  locationInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => lookup(locationInput.value), 300);
+  });
+
+  locationInput.addEventListener('change', handleSelection);
+  locationInput.addEventListener('blur', () => {
+    if (!locationInput.value.trim()) {
+      latInput.value = '';
+      lonInput.value = '';
+      setStatus('');
+      broadcastLocation();
+    }
+  });
+
+  locationInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSelection();
+    }
+  });
+
+  if (findBtn) {
+    findBtn.addEventListener('click', () => {
+      lookup(locationInput.value).then(handleSelection);
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      locationInput.value = '';
+      latInput.value = '';
+      lonInput.value = '';
+      clearSuggestions();
+      setStatus('');
+      broadcastLocation();
+    });
+  }
+
+  if (radiusField) {
+    radiusField.addEventListener('change', () => {
+      const lat = normaliseNumber(latInput.value);
+      const lon = normaliseNumber(lonInput.value);
+      if (lat !== null && lon !== null) {
+        broadcastLocation(lat, lon);
+      }
+    });
+  }
+
+  if (latInput.value && lonInput.value) {
+    setStatus('Filtering by distance.');
+    broadcastLocation(normaliseNumber(latInput.value), normaliseNumber(lonInput.value));
+  }
+});
+</script>
 
 <!-- Save Job AJAX -->
 <script>

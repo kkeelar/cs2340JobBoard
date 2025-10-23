@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import JsonResponse
+from django.urls import reverse
 from django.core.paginator import Paginator
 from math import pi, sin, cos, asin, sqrt
 
@@ -40,11 +41,17 @@ def job_list(request):
     """Job search and listing page with filters"""
     form = JobSearchForm(request.GET or None)
     jobs = Job.objects.filter(is_active=True)
+    location_lat = None
+    location_lon = None
+    location_radius_value = form.fields["location_radius"].initial or 25
 
     # Apply search filters
     if form.is_valid():
         search = form.cleaned_data.get('search')
         location = form.cleaned_data.get('location')
+        location_lat = form.cleaned_data.get('location_lat')
+        location_lon = form.cleaned_data.get('location_lon')
+        location_radius_value = form.cleaned_data.get('location_radius') or location_radius_value
         skills = form.cleaned_data.get('skills')
         salary_min = form.cleaned_data.get('salary_min')
         salary_max = form.cleaned_data.get('salary_max')
@@ -58,10 +65,6 @@ def job_list(request):
                 Q(company__icontains=search) |
                 Q(description__icontains=search)
             )
-
-        # Location filter
-        if location:
-            jobs = jobs.filter(location__icontains=location)
 
         # Skills filter
         if skills:
@@ -89,6 +92,25 @@ def job_list(request):
         if visa_sponsorship:
             jobs = jobs.filter(visa_sponsorship=True)
 
+        # Location filter (distance-based when coordinates are provided)
+        if location_lat is not None and location_lon is not None:
+            try:
+                radius = float(location_radius_value or 25)
+            except (TypeError, ValueError):
+                radius = 25
+            filtered_jobs = []
+            for job in jobs.exclude(latitude__isnull=True).exclude(longitude__isnull=True):
+                if job.latitude is None or job.longitude is None:
+                    continue
+                distance = _haversine_miles(location_lat, location_lon, job.latitude, job.longitude)
+                if distance <= radius:
+                    job.search_distance = round(distance, 1)
+                    filtered_jobs.append(job)
+            filtered_jobs.sort(key=lambda j: getattr(j, "search_distance", 0))
+            jobs = filtered_jobs
+        elif location:
+            jobs = jobs.filter(location__icontains=location)
+
     # Pagination
     paginator = Paginator(jobs, 12)  # Show 12 jobs per page
     page_number = request.GET.get('page')
@@ -112,6 +134,10 @@ def job_list(request):
         'saved_job_ids': saved_job_ids,
         'applied_job_ids': applied_job_ids,
         'total_jobs': paginator.count,
+        'location_filter_active': location_lat is not None and location_lon is not None,
+        'location_lat': location_lat,
+        'location_lon': location_lon,
+        'location_radius': location_radius_value,
     }
     return render(request, 'jobs/job_list.html', context)
 
@@ -421,29 +447,30 @@ def jobs_api(request):
     if has_latlon:
         qs = qs.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
         if lat and lon and radius:
-            lat, lon, radius = float(lat), float(lon), float(radius)
-            for j in qs:
-                if j.latitude is None or j.longitude is None:
-                    continue
-                d = _haversine_miles(lat, lon, j.latitude, j.longitude)
-                if d <= radius:
-                    items.append({
-                        "id": j.id,
-                        "title": j.title,
-                        "company": j.company or "",
-                        "lat": j.latitude,
-                        "lon": j.longitude,
-                        "distance_miles": round(d, 2),
-                    })
+            lat_f, lon_f, radius_f = float(lat), float(lon), float(radius)
         else:
-            for j in qs:
-                items.append({
-                    "id": j.id,
-                    "title": j.title,
-                    "company": j.company or "",
-                    "lat": j.latitude,
-                    "lon": j.longitude,
-                })
+            lat_f = lon_f = radius_f = None
+
+        for job in qs:
+            if job.latitude is None or job.longitude is None:
+                continue
+
+            distance = None
+            if lat_f is not None and lon_f is not None and radius_f is not None:
+                distance = _haversine_miles(lat_f, lon_f, job.latitude, job.longitude)
+                if distance > radius_f:
+                    continue
+
+            items.append({
+                "id": job.id,
+                "title": job.title,
+                "company": job.company or "",
+                "location": job.location or "",
+                "lat": job.latitude,
+                "lon": job.longitude,
+                "distance_miles": round(distance, 2) if distance is not None else None,
+                "url": reverse("job_detail", args=[job.id]),
+            })
 
     return JsonResponse({"jobs": items})
 
@@ -453,28 +480,19 @@ def recommendations_api(request):
     Returns recommended jobs. If you add a profile.skills M2M and job.required_skills M2M,
     this will sort by overlap. Otherwise it falls back to recent jobs.
     """
-    try:
-        user_skill_ids = list(request.user.profile.skills.values_list("id", flat=True))
-    except Exception:
-        user_skill_ids = []
+    profile = getattr(request.user, "profile", None)
+    if not profile:
+        return JsonResponse({"recommendations": []})
 
-    qs = Job.objects.all()
-    if user_skill_ids:
-        qs = qs.annotate(
-            skill_overlap=Count("required_skills", filter=Q(required_skills__in=user_skill_ids))
-        ).order_by("-skill_overlap", "-posted_at")
-    else:
-        # Fallback if skills not wired yet
-        if hasattr(Job, "posted_at"):
-            qs = qs.order_by("-posted_at")
-        else:
-            qs = qs.order_by("-id")
-
+    recs = recommend_jobs_for_profile(profile, limit=12)
     data = [{
-        "id": j.id,
-        "title": j.title,
-        "company": j.company or "",
-        "skill_overlap": getattr(j, "skill_overlap", 0)
-    } for j in qs[:20]]
+        "id": rec.job.id,
+        "title": rec.job.title,
+        "company": rec.job.company or "",
+        "location": rec.job.location or "",
+        "matched_skills": list(rec.matched_skills),
+        "score": rec.score,
+        "url": reverse("job_detail", args=[rec.job.id]),
+    } for rec in recs]
 
     return JsonResponse({"recommendations": data})
