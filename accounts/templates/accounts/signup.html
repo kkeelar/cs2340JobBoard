@@ -41,6 +41,31 @@
             {% endfor %}
           </div>
 
+          <!-- Role selection -->
+          <div class="mb-3">
+            <label class="form-label d-block">Register as:</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="role" id="id_role_seeker" value="seeker" checked>
+              <label class="form-check-label" for="id_role_seeker">
+                Job Seeker
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="role" id="id_role_recruiter" value="recruiter">
+              <label class="form-check-label" for="id_role_recruiter">
+                Recruiter
+              </label>
+            </div>
+            {% if form.role.errors %}
+              <div class="invalid-feedback d-block">
+                {% for error in form.role.errors %}
+                  {{ error }}
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+
           <button type="submit" class="btn btn-primary w-100">Sign Up</button>
         </form>
 

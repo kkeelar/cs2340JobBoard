@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Edit Job - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Edit Job: {{ job.title }}</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="d-flex gap-3 mt-3">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'manage_applications' job.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

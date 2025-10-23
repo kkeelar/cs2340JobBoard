@@ -9,6 +9,8 @@ urlpatterns = [
     path("profile/", views.profile, name="profile"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
 
+    path("recruiter/dashboard/", views.recruiter_dashboard, name="recruiter_dashboard"),
+
 
 
     # password management

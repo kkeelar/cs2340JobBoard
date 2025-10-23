@@ -9,6 +9,26 @@ from django.views.decorators.http import require_POST
 from .models import Job, JobApplication, SavedJob
 from .forms import JobSearchForm, JobApplicationForm, JobPostForm, ApplicationStatusUpdateForm
 
+@login_required
+def recruiter_dashboard(request):
+    """Dashboard for recruiters showing their postings and stats"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        return redirect("home")
+
+    jobs = Job.objects.filter(posted_by=request.user.profile)
+    total_jobs = jobs.count()
+    total_applicants = JobApplication.objects.filter(job__in=jobs).count()
+
+
+    context = {
+        "jobs": jobs,
+        "total_jobs": total_jobs,
+        "total_applicants": total_applicants,
+    }
+    return render(request, "jobs/recruiter_dashboard.html", context)
+
+
 
 def job_list(request):
     """Job search and listing page with filters"""
@@ -233,33 +253,31 @@ def saved_jobs(request):
 
 @login_required
 def post_job(request):
-    """Form for posting a new job (staff/recruiters only)"""
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to post jobs.')
-        return redirect('job_list')
-    
-    if request.method == 'POST':
+    """Recruiters can post new jobs"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        messages.error(request, "Only recruiters can post jobs.")
+        return redirect("job_list")
+
+    if request.method == "POST":
         form = JobPostForm(request.POST)
         if form.is_valid():
             job = form.save(commit=False)
-            job.posted_by = request.user
+            job.posted_by = profile  # ✅ tie to recruiter profile
             job.save()
-            
             messages.success(request, f'Job "{job.title}" posted successfully!')
-            return redirect('job_detail', pk=job.pk)
+            return redirect("recruiter_dashboard")
     else:
         form = JobPostForm()
-    
-    context = {
-        'form': form,
-    }
-    return render(request, 'jobs/post_job.html', context)
+
+    return render(request, "jobs/post_job.html", {"form": form})
+
 
 
 @login_required
 def manage_applications(request, job_pk):
     """View for recruiters to manage applications for their job postings"""
-    job = get_object_or_404(Job, pk=job_pk, posted_by=request.user)
+    job = get_object_or_404(Job, pk=job_pk, posted_by=request.user.profile)
     applications = JobApplication.objects.filter(job=job)
     
     # Filter by status
@@ -282,7 +300,7 @@ def update_application_status(request, pk):
     application = get_object_or_404(JobApplication, pk=pk)
     
     # Check permissions
-    if not (request.user == application.job.posted_by or request.user.is_staff):
+    if not (request.user.profile == application.job.posted_by or request.user.is_staff):
         messages.error(request, 'You do not have permission to update this application.')
         return redirect('job_list')
     
@@ -301,3 +319,62 @@ def update_application_status(request, pk):
         'job': application.job,
     }
     return render(request, 'jobs/update_application_status.html', context)
+
+@login_required
+def edit_job(request, pk):
+    """Allow recruiters to edit their own job postings"""
+    profile = getattr(request.user, "profile", None)
+    job = get_object_or_404(Job, pk=pk, posted_by=profile)
+
+    if profile.role != "recruiter":
+        messages.error(request, "Only recruiters can edit jobs.")
+        return redirect("job_list")
+
+    if request.method == "POST":
+        form = JobPostForm(request.POST, instance=job)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Job "{job.title}" updated successfully!')
+            return redirect("manage_applications", job_pk=job.pk)
+    else:
+        form = JobPostForm(instance=job)
+
+    return redirect("recruiter_dashboard")
+
+
+@login_required
+def application_pipeline(request, job_pk):
+    """Kanban-style pipeline for managing applicants"""
+    job = get_object_or_404(Job, pk=job_pk, posted_by=request.user.profile)
+
+    # Group applications by status
+    applications_by_status = {
+        status[0]: JobApplication.objects.filter(job=job, status=status[0])
+        for status in JobApplication.STATUS_CHOICES
+    }
+
+    context = {
+        "job": job,
+        "applications_by_status": applications_by_status,
+        "status_choices": JobApplication.STATUS_CHOICES,
+    }
+    return render(request, "jobs/application_pipeline.html", context)
+
+
+@login_required
+@require_POST
+def update_application_status(request, pk):
+    application = get_object_or_404(JobApplication, pk=pk)
+    if request.user.profile != application.job.posted_by:
+        messages.error(request, "Unauthorized")
+        return redirect("recruiter_dashboard")
+
+    new_status = request.POST.get("status")
+    if new_status not in dict(JobApplication.STATUS_CHOICES):
+        messages.error(request, "Invalid status")
+    else:
+        application.status = new_status
+        application.save()
+        messages.success(request, f"Moved {application.applicant.username} to {application.get_status_display()}")
+
+    return redirect("application_pipeline", job_pk=application.job.pk)

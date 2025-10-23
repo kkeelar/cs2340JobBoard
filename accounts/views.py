@@ -7,25 +7,34 @@ from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .forms import ProfileForm, EducationFormSet, WorkFormSet
+from .forms import ProfileForm, EducationFormSet, WorkFormSet, CustomSignupForm
 from .models import Profile  # import your Profile model
 
 User = get_user_model()
 
 
-# ---------- Auth ----------
-
 def signup(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        print(request.POST)
+        form = CustomSignupForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # ensure a Profile exists for the new user
-            Profile.objects.get_or_create(user=user)
-            auth_login(request, user)  # auto-login after signup
-            return redirect("profile")  # my profile
+            role = form.cleaned_data.get("role")
+
+            # Save user first
+            user = form.save(commit=False)
+            user.email = form.cleaned_data.get("email")
+            user.save()
+
+            # Now override the profile created by signal
+            profile = Profile.objects.get(user=user)
+            profile.role = role
+            profile.save(update_fields=["role"])
+
+            auth_login(request, user)
+            return redirect("recruiter_dashboard" if role == "recruiter" else "profile")
+
     else:
-        form = UserCreationForm()
+        form = CustomSignupForm()
     return render(request, "accounts/signup.html", {"form": form})
 
 
@@ -35,10 +44,15 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            return redirect("profile")  # my profile
+
+            # redirect based on role
+            if hasattr(user, "profile") and user.profile.role == "recruiter":
+                return redirect("recruiter_dashboard")
+            return redirect("profile")
     else:
         form = AuthenticationForm()
     return render(request, "accounts/login.html", {"form": form})
+
 
 
 def logout_view(request):
@@ -134,3 +148,12 @@ def profile_detail(request, username):
     }
     # Use a dedicated template for public view. You can also reuse accounts/profile.html if you prefer.
     return render(request, "accounts/profile_detail.html", context)
+
+@login_required
+def recruiter_dashboard(request):
+    """Simple recruiter dashboard placeholder"""
+    profile = request.user.profile
+    if profile.role != "recruiter":
+        return redirect("profile")  # block seekers
+
+    return render(request, "accounts/recruiter_dashboard.html", {"profile": profile})
