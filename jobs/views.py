@@ -278,20 +278,7 @@ def post_job(request):
 def manage_applications(request, job_pk):
     """View for recruiters to manage applications for their job postings"""
     job = get_object_or_404(Job, pk=job_pk, posted_by=request.user.profile)
-    applications = JobApplication.objects.filter(job=job)
-    
-    # Filter by status
-    status_filter = request.GET.get('status')
-    if status_filter:
-        applications = applications.filter(status=status_filter)
-    
-    context = {
-        'job': job,
-        'applications': applications,
-        'status_choices': JobApplication.STATUS_CHOICES,
-        'current_status_filter': status_filter,
-    }
-    return render(request, 'jobs/manage_applications.html', context)
+    return redirect('application_pipeline', job_pk=job.pk)
 
 
 @login_required
@@ -309,7 +296,7 @@ def update_application_status(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f'Application status updated to {application.get_status_display()}.')
-            return redirect('manage_applications', job_pk=application.job.pk)
+            return redirect('application_pipeline', job_pk=application.job.pk)
     else:
         form = ApplicationStatusUpdateForm(instance=application)
     
@@ -335,11 +322,11 @@ def edit_job(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f'Job "{job.title}" updated successfully!')
-            return redirect("manage_applications", job_pk=job.pk)
+            return redirect("application_pipeline", job_pk=job.pk)
     else:
         form = JobPostForm(instance=job)
 
-    return redirect("recruiter_dashboard")
+    return render(request, "jobs/edit_job.html", {"form": form, "job": job})
 
 
 @login_required

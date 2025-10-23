@@ -10,7 +10,7 @@
     {{ form.as_p }}
     <div class="d-flex gap-3 mt-3">
       <button type="submit" class="btn btn-primary">Save Changes</button>
-      <a href="{% url 'manage_applications' job.pk %}" class="btn btn-outline-secondary">Cancel</a>
+      <a href="{% url 'application_pipeline' job.pk %}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

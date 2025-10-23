@@ -9,6 +9,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from .forms import ProfileForm, EducationFormSet, WorkFormSet, CustomSignupForm
 from .models import Profile  # import your Profile model
+from jobs.models import Job, JobApplication
 
 User = get_user_model()
 
@@ -156,7 +157,13 @@ def recruiter_dashboard(request):
     if profile.role != "recruiter":
         return redirect("profile")  # block seekers
 
-    return render(request, "accounts/recruiter_dashboard.html", {"profile": profile})
+    jobs = Job.objects.filter(posted_by=profile)
+    context = {
+        "jobs": jobs,
+        "total_jobs": jobs.count(),
+        "total_applicants": JobApplication.objects.filter(job__in=jobs).count(),
+    }
+    return render(request, "jobs/recruiter_dashboard.html", context)
 
 from django.db.models import Q
 
@@ -203,4 +210,3 @@ def candidate_search(request):
         "location": location,
         "skill": skill,
     })
-
