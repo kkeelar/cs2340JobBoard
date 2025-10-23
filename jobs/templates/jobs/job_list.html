@@ -17,20 +17,20 @@
               {{ form.search.label_tag }}
               {{ form.search }}
             </div>
-            
+
             <!-- Location -->
             <div class="mb-3">
               {{ form.location.label_tag }}
               {{ form.location }}
             </div>
-            
+
             <!-- Skills -->
             <div class="mb-3">
               {{ form.skills.label_tag }}
               {{ form.skills }}
               <small class="form-text text-muted">{{ form.skills.help_text }}</small>
             </div>
-            
+
             <!-- Salary Range -->
             <div class="mb-3">
               <label class="form-label">Salary Range</label>
@@ -45,26 +45,28 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Work Type -->
             <div class="mb-3">
               {{ form.work_type.label_tag }}
               {{ form.work_type }}
             </div>
-            
+
             <!-- Visa Sponsorship -->
             <div class="mb-3 form-check">
               {{ form.visa_sponsorship }}
               {{ form.visa_sponsorship.label_tag }}
             </div>
-            
+
             <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
             <a href="{% url 'job_list' %}" class="btn btn-outline-secondary w-100 mt-2">Clear All</a>
           </form>
         </div>
       </div>
     </div>
-    
+
+    {% include "jobs/partials/map_widget.html" %}
+
     <!-- Job Results -->
     <div class="col-lg-9">
       <!-- Results Header -->
@@ -79,7 +81,7 @@
           </a>
         {% endif %}
       </div>
-      
+
       <!-- Job Cards -->
       {% if jobs %}
         <div class="row">
@@ -96,7 +98,7 @@
                     </h5>
                     <!-- Save/Unsave Button -->
                     {% if user.is_authenticated %}
-                      <button class="btn btn-sm btn-outline-primary save-job-btn" 
+                      <button class="btn btn-sm btn-outline-primary save-job-btn"
                               data-job-id="{{ job.pk }}"
                               data-saved="{% if job.pk in saved_job_ids %}true{% else %}false{% endif %}">
                         {% if job.pk in saved_job_ids %}
@@ -107,9 +109,9 @@
                       </button>
                     {% endif %}
                   </div>
-                  
+
                   <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
-                  
+
                   <!-- Job Info -->
                   <div class="mb-3">
                     <small class="text-muted">
@@ -122,14 +124,14 @@
                       {% endif %}
                     </small>
                   </div>
-                  
+
                   <!-- Salary -->
                   {% if job.salary_min or job.salary_max %}
                     <p class="mb-2">
                       <strong>💰 {{ job.salary_range_display }}</strong>
                     </p>
                   {% endif %}
-                  
+
                   <!-- Skills -->
                   {% if job.required_skills %}
                     <div class="mb-3">
@@ -141,12 +143,12 @@
                       {% endif %}
                     </div>
                   {% endif %}
-                  
+
                   <!-- Description Preview -->
                   <p class="card-text text-muted">
                     {{ job.description|truncatewords:15 }}
                   </p>
-                  
+
                   <!-- Action Buttons -->
                   <div class="d-flex gap-2">
                     <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-primary btn-sm">
@@ -166,7 +168,7 @@
                       </a>
                     {% endif %}
                   </div>
-                  
+
                   <!-- Posted Date -->
                   <small class="text-muted mt-2 d-block">
                     Posted {{ job.posted_date|timesince }} ago
@@ -176,7 +178,7 @@
             </div>
           {% endfor %}
         </div>
-        
+
         <!-- Pagination -->
         {% if page_obj.has_other_pages %}
           <nav aria-label="Job pagination">
@@ -186,7 +188,7 @@
                   <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a>
                 </li>
               {% endif %}
-              
+
               {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
                   <li class="page-item active">
@@ -198,7 +200,7 @@
                   </li>
                 {% endif %}
               {% endfor %}
-              
+
               {% if page_obj.has_next %}
                 <li class="page-item">
                   <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a>
@@ -207,7 +209,7 @@
             </ul>
           </nav>
         {% endif %}
-        
+
       {% else %}
         <!-- No Jobs Found -->
         <div class="text-center py-5">
@@ -228,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const jobId = this.getAttribute('data-job-id');
             const isSaved = this.getAttribute('data-saved') === 'true';
-            
+
             fetch(`/jobs/${jobId}/save/`, {
                 method: 'POST',
                 headers: {

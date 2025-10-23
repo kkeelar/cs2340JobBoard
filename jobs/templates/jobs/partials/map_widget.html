@@ -1,0 +1,107 @@
+{# jobs/templates/jobs/partials/map_widget.html #}
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0">🗺️ Jobs Near You</h6>
+    <div class="d-flex align-items-center gap-2">
+      <label class="mb-0 small">Radius (mi)
+        <input id="jb-radius" type="number" min="1" max="100" step="1"
+               value="{{ preferred_radius|default:10 }}" style="width:5rem; margin-left:6px;">
+      </label>
+      <button id="jb-useme" type="button" class="btn btn-sm btn-outline-primary">Use My Location</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="jb-map" style="height: 260px; border-radius: 8px;"></div>
+    <div class="text-muted small mt-2" id="jb-status"></div>
+
+    <details class="mt-2">
+      <summary class="small">Recommended for you</summary>
+      <div id="jb-recs-body" class="mt-2 small text-body-secondary">
+        {% if user.is_authenticated %}
+          Loading recommendations…
+        {% else %}
+          Sign in to see skill-based recommendations.
+        {% endif %}
+      </div>
+    </details>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+(() => {
+  const mapEl = document.getElementById('jb-map');
+  if (!mapEl) return;
+
+  const defaultLat = 33.7756, defaultLon = -84.3963; // ATL default
+  const map = L.map('jb-map', { zoomControl: true }).setView([defaultLat, defaultLon], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const overlays = [];
+  const statusEl = document.getElementById('jb-status');
+  const radiusInput = document.getElementById('jb-radius');
+  const clearOverlays = () => { overlays.forEach(o => map.removeLayer(o)); overlays.length = 0; };
+
+  async function fetchJSON(url) {
+    const r = await fetch(url, { credentials: 'same-origin' });
+    if (!r.ok) throw new Error('Request failed');
+    return r.json();
+  }
+
+  async function loadJobs(lat=null, lon=null, radius=null) {
+    const url = new URL("{% url 'jobs_api' %}", window.location.origin);
+    if (lat != null && lon != null && radius != null) {
+      url.searchParams.set('lat', lat);
+      url.searchParams.set('lon', lon);
+      url.searchParams.set('radius_miles', radius);
+    }
+    const data = await fetchJSON(url);
+    clearOverlays();
+
+    if (lat != null && lon != null && radius != null) {
+      const circle = L.circle([lat, lon], { radius: radius * 1609.34 });
+      circle.addTo(map); overlays.push(circle); map.setView([lat, lon], 11);
+    }
+
+    (data.jobs || []).forEach(j => {
+      const m = L.marker([j.lat, j.lon]).addTo(map)
+        .bindPopup(`<strong>${j.title}</strong><br>${j.company || ''}${j.distance_miles ? `<br>${j.distance_miles} mi` : ''}`);
+      overlays.push(m);
+    });
+  }
+
+  async function loadRecs() {
+    const box = document.getElementById('jb-recs-body');
+    if (!box) return;
+    try {
+      const data = await fetchJSON("{% url 'recommendations_api' %}");
+      const recs = data.recommendations || [];
+      if (!recs.length) { box.textContent = 'No recommendations yet.'; return; }
+      box.innerHTML = recs.slice(0, 8).map(r => `
+        <div class="py-1 border-bottom">
+          <strong>${r.title}</strong>${r.company ? ' @ ' + r.company : ''}
+          <div class="small text-muted">match score: ${r.skill_overlap ?? 0}</div>
+        </div>`).join('');
+    } catch {
+      /* unauth users may 403 if @login_required; safe to ignore */
+    }
+  }
+
+  document.getElementById('jb-useme').addEventListener('click', () => {
+    const r = parseInt(radiusInput.value || '10', 10);
+    if (!navigator.geolocation) { statusEl.textContent = 'Geolocation not supported.'; return; }
+    statusEl.textContent = 'Locating…';
+    navigator.geolocation.getCurrentPosition(
+      pos => { statusEl.textContent = ''; loadJobs(pos.coords.latitude, pos.coords.longitude, r); },
+      () => { statusEl.textContent = 'Location denied. Showing all jobs.'; loadJobs(); }
+    );
+  });
+
+  // initial load
+  loadJobs();   // markers will appear once lat/lon fields exist
+  loadRecs();
+})();
+</script>

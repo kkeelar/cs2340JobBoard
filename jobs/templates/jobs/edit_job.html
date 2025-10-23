@@ -8,10 +8,124 @@
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
+
+    {# --- Address autocomplete UI & helpers --- #}
+    <datalist id="address-suggestions"></datalist>
+    <div class="form-text mb-2">
+      Start typing an address or city, then choose a suggestion or click “Find”. Coordinates will auto-fill.
+    </div>
+
+    <div id="addr-preview" style="height: 220px; border-radius: 8px; display:none; margin-bottom:10px;"></div>
+
+    <div class="mb-2">
+      <button type="button" id="addr-find" class="btn btn-sm btn-outline-secondary">
+        Find
+      </button>
+      <span id="addr-status" class="text-muted small ms-2"></span>
+    </div>
+
     <div class="d-flex gap-3 mt-3">
       <button type="submit" class="btn btn-primary">Save Changes</button>
       <a href="{% url 'application_pipeline' job.pk %}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+  <!-- Leaflet for small preview; safe to include here -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+  (() => {
+    // Inputs rendered by {{ form.as_p }} — MUST exist in JobPostForm.Meta.fields
+    const loc = document.getElementById('id_location');
+    const lat = document.getElementById('id_latitude');
+    const lon = document.getElementById('id_longitude');
+    if (!loc || !lat || !lon) return; // fields missing
+
+    // Attach datalist to the location input
+    const dl     = document.getElementById('address-suggestions');
+    const findB  = document.getElementById('addr-find');
+    const status = document.getElementById('addr-status');
+    loc.setAttribute('list', 'address-suggestions');
+
+    // Tiny Leaflet preview map so the recruiter sees the pin
+    let map, marker;
+    const prevEl = document.getElementById('addr-preview');
+    function ensureMap(){
+      if (map) return;
+      prevEl.style.display = 'block';
+      map = L.map('addr-preview', { zoomControl: true }).setView([33.7756, -84.3963], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+    }
+    function showPin(la, lo){
+      ensureMap();
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([la, lo]).addTo(map);
+      map.setView([la, lo], 13);
+    }
+
+    // Debounced search against Nominatim
+    let timer = null;
+    let lastResults = []; // [{label, lat, lon}]
+    function debounce(fn, ms=300){ clearTimeout(timer); timer = setTimeout(fn, ms); }
+
+    async function search(q){
+      if (!q || q.length < 3){ dl.innerHTML = ''; status.textContent = ''; return; }
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('format', 'jsonv2');
+      url.searchParams.set('addressdetails', '0');
+      url.searchParams.set('limit', '8');
+      url.searchParams.set('q', q);
+
+      status.textContent = 'Searching…';
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        lastResults = data.map(d => ({ label: d.display_name, lat: d.lat, lon: d.lon }));
+        dl.innerHTML = lastResults.map(r =>
+          `<option value="${r.label.replace(/"/g,'&quot;')}"></option>`
+        ).join('');
+        status.textContent = lastResults.length ? '' : 'No results';
+      } catch {
+        status.textContent = 'Lookup failed';
+      }
+    }
+
+    function applyBestMatch(){
+      const v = (loc.value || '').trim();
+      if (!v){ lat.value = ''; lon.value = ''; status.textContent=''; return; }
+      // Prefer exact match; otherwise take the first suggestion if available
+      let hit = lastResults.find(r => r.label === v);
+      if (!hit && lastResults.length) hit = lastResults[0];
+      if (hit){
+        lat.value = hit.lat;
+        lon.value = hit.lon;
+        showPin(parseFloat(hit.lat), parseFloat(hit.lon));
+        status.textContent = 'Coordinates filled';
+      } else {
+        status.textContent = 'Pick a suggestion or click Find';
+      }
+    }
+
+    // Events
+    loc.addEventListener('input', () => debounce(() => search(loc.value), 250));
+    loc.addEventListener('change', applyBestMatch);
+    loc.addEventListener('blur',   applyBestMatch);
+    loc.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){ e.preventDefault(); applyBestMatch(); }
+    });
+    findB.addEventListener('click', () => { search(loc.value).then(applyBestMatch); });
+
+    // If editing an existing job that already has coords, show the pin
+    if (lat.value && lon.value){
+      showPin(parseFloat(lat.value), parseFloat(lon.value));
+    }
+  })();
+  </script>
 {% endblock %}

@@ -10,78 +10,78 @@
         <h1 class="h2">Post a New Job</h1>
         <p class="lead text-muted">Find your next great hire</p>
       </div>
-      
+
       <!-- Job Posting Form -->
       <div class="card shadow-sm">
         <div class="card-body">
           <form method="post">
             {% csrf_token %}
-            
+
             <!-- Basic Information -->
             <div class="mb-4">
               <h5 class="border-bottom pb-2">Basic Information</h5>
-              
+
               <div class="mb-3">
                 {{ form.title.label_tag }}
                 {{ form.title }}
-                {% if form.title.errors %}
-                  <div class="text-danger mt-1">{{ form.title.errors }}</div>
-                {% endif %}
+                {% if form.title.errors %}<div class="text-danger mt-1">{{ form.title.errors }}</div>{% endif %}
               </div>
-              
+
               <div class="mb-3">
                 {{ form.company.label_tag }}
                 {{ form.company }}
-                {% if form.company.errors %}
-                  <div class="text-danger mt-1">{{ form.company.errors }}</div>
-                {% endif %}
+                {% if form.company.errors %}<div class="text-danger mt-1">{{ form.company.errors }}</div>{% endif %}
               </div>
-              
+
               <div class="mb-3">
                 {{ form.description.label_tag }}
                 {{ form.description }}
-                {% if form.description.errors %}
-                  <div class="text-danger mt-1">{{ form.description.errors }}</div>
-                {% endif %}
-                <small class="form-text text-muted">
-                  Provide a detailed description of the role, responsibilities, and what makes this opportunity special.
-                </small>
+                {% if form.description.errors %}<div class="text-danger mt-1">{{ form.description.errors }}</div>{% endif %}
+                <small class="form-text text-muted">Provide a detailed description of the role, responsibilities, and what makes this opportunity special.</small>
               </div>
             </div>
-            
+
             <!-- Location & Work Arrangement -->
             <div class="mb-4">
               <h5 class="border-bottom pb-2">Location & Work Arrangement</h5>
-              
+
               <div class="mb-3">
                 {{ form.location.label_tag }}
                 {{ form.location }}
-                {% if form.location.errors %}
-                  <div class="text-danger mt-1">{{ form.location.errors }}</div>
-                {% endif %}
+                {% if form.location.errors %}<div class="text-danger mt-1">{{ form.location.errors }}</div>{% endif %}
+
+                {# Hidden coord fields MUST be rendered here #}
+                {{ form.latitude }}
+                {{ form.longitude }}
+
+                {# Autocomplete helpers #}
+                <datalist id="address-suggestions"></datalist>
+                <div class="form-text">Start typing a city or address, then choose a suggestion or click “Find”.</div>
+
+                <div id="addr-preview" style="height: 220px; border-radius: 8px; display:none; margin-top:8px;"></div>
+
+                <div class="mt-2">
+                  <button type="button" id="addr-find" class="btn btn-sm btn-outline-secondary">Find</button>
+                  <span id="addr-status" class="text-muted small ms-2"></span>
+                </div>
               </div>
-              
+
               <div class="mb-3">
                 {{ form.work_type.label_tag }}
                 {{ form.work_type }}
-                {% if form.work_type.errors %}
-                  <div class="text-danger mt-1">{{ form.work_type.errors }}</div>
-                {% endif %}
+                {% if form.work_type.errors %}<div class="text-danger mt-1">{{ form.work_type.errors }}</div>{% endif %}
               </div>
             </div>
-            
+
             <!-- Compensation -->
             <div class="mb-4">
               <h5 class="border-bottom pb-2">Compensation</h5>
-              
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
                     {{ form.salary_min.label_tag }}
                     {{ form.salary_min }}
-                    {% if form.salary_min.errors %}
-                      <div class="text-danger mt-1">{{ form.salary_min.errors }}</div>
-                    {% endif %}
+                    {% if form.salary_min.errors %}<div class="text-danger mt-1">{{ form.salary_min.errors }}</div>{% endif %}
                     <small class="form-text text-muted">{{ form.salary_min.help_text }}</small>
                   </div>
                 </div>
@@ -89,93 +89,77 @@
                   <div class="mb-3">
                     {{ form.salary_max.label_tag }}
                     {{ form.salary_max }}
-                    {% if form.salary_max.errors %}
-                      <div class="text-danger mt-1">{{ form.salary_max.errors }}</div>
-                    {% endif %}
+                    {% if form.salary_max.errors %}<div class="text-danger mt-1">{{ form.salary_max.errors }}</div>{% endif %}
                     <small class="form-text text-muted">{{ form.salary_max.help_text }}</small>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <!-- Requirements -->
             <div class="mb-4">
               <h5 class="border-bottom pb-2">Requirements</h5>
-              
+
               <div class="mb-3">
                 {{ form.required_skills.label_tag }}
                 {{ form.required_skills }}
-                {% if form.required_skills.errors %}
-                  <div class="text-danger mt-1">{{ form.required_skills.errors }}</div>
-                {% endif %}
+                {% if form.required_skills.errors %}<div class="text-danger mt-1">{{ form.required_skills.errors }}</div>{% endif %}
                 <small class="form-text text-muted">{{ form.required_skills.help_text }}</small>
               </div>
-              
+
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
                     {{ form.experience_level.label_tag }}
                     {{ form.experience_level }}
-                    {% if form.experience_level.errors %}
-                      <div class="text-danger mt-1">{{ form.experience_level.errors }}</div>
-                    {% endif %}
+                    {% if form.experience_level.errors %}<div class="text-danger mt-1">{{ form.experience_level.errors }}</div>{% endif %}
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
                     {{ form.job_type.label_tag }}
                     {{ form.job_type }}
-                    {% if form.job_type.errors %}
-                      <div class="text-danger mt-1">{{ form.job_type.errors }}</div>
-                    {% endif %}
+                    {% if form.job_type.errors %}<div class="text-danger mt-1">{{ form.job_type.errors }}</div>{% endif %}
                   </div>
                 </div>
               </div>
-              
+
               <div class="form-check mb-3">
                 {{ form.visa_sponsorship }}
                 {{ form.visa_sponsorship.label_tag }}
-                {% if form.visa_sponsorship.errors %}
-                  <div class="text-danger mt-1">{{ form.visa_sponsorship.errors }}</div>
-                {% endif %}
+                {% if form.visa_sponsorship.errors %}<div class="text-danger mt-1">{{ form.visa_sponsorship.errors }}</div>{% endif %}
               </div>
             </div>
-            
+
             <!-- Application Details -->
             <div class="mb-4">
               <h5 class="border-bottom pb-2">Application Details</h5>
-              
+
               <div class="mb-3">
                 {{ form.contact_email.label_tag }}
                 {{ form.contact_email }}
-                {% if form.contact_email.errors %}
-                  <div class="text-danger mt-1">{{ form.contact_email.errors }}</div>
-                {% endif %}
+                {% if form.contact_email.errors %}<div class="text-danger mt-1">{{ form.contact_email.errors }}</div>{% endif %}
               </div>
-              
+
               <div class="mb-3">
                 {{ form.application_deadline.label_tag }}
                 {{ form.application_deadline }}
-                {% if form.application_deadline.errors %}
-                  <div class="text-danger mt-1">{{ form.application_deadline.errors }}</div>
-                {% endif %}
+                {% if form.application_deadline.errors %}<div class="text-danger mt-1">{{ form.application_deadline.errors }}</div>{% endif %}
                 <small class="form-text text-muted">{{ form.application_deadline.help_text }}</small>
               </div>
             </div>
-            
+
             <!-- Action Buttons -->
             <div class="d-flex gap-3">
               <button type="submit" class="btn btn-primary btn-lg">
                 <i class="fas fa-plus"></i> Post Job
               </button>
-              <a href="{% url 'job_list' %}" class="btn btn-outline-secondary btn-lg">
-                Cancel
-              </a>
+              <a href="{% url 'job_list' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
             </div>
           </form>
         </div>
       </div>
-      
+
       <!-- Tips -->
       <div class="card shadow-sm mt-4">
         <div class="card-header">
@@ -195,4 +179,95 @@
     </div>
   </div>
 </div>
+
+{# Leaflet + Autocomplete JS INSIDE THE CONTENT BLOCK so it actually renders #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+(() => {
+  const loc = document.getElementById('id_location');
+  const lat = document.getElementById('id_latitude');
+  const lon = document.getElementById('id_longitude');
+  if (!loc || !lat || !lon) return;
+
+  const dl     = document.getElementById('address-suggestions');
+  const findB  = document.getElementById('addr-find');
+  const status = document.getElementById('addr-status');
+
+  loc.setAttribute('list', 'address-suggestions');
+
+  // Tiny preview map
+  let map, marker;
+  const prevEl = document.getElementById('addr-preview');
+  function ensureMap(){
+    if (map) return;
+    prevEl.style.display = 'block';
+    map = L.map('addr-preview').setView([33.7756, -84.3963], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }
+  function showPin(la, lo){
+    ensureMap();
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([la, lo]).addTo(map);
+    map.setView([la, lo], 13);
+  }
+
+  // Debounced Nominatim search
+  let timer = null;
+  let lastResults = [];
+  function debounce(fn, ms=300){ clearTimeout(timer); timer = setTimeout(fn, ms); }
+
+  async function search(q){
+    if (!q || q.length < 3){
+      dl.innerHTML = ''; status.textContent='';
+      return;
+    }
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('format','jsonv2');
+    url.searchParams.set('addressdetails','0');
+    url.searchParams.set('limit','8');
+    url.searchParams.set('q', q);
+
+    status.textContent = 'Searching…';
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      lastResults = data.map(d => ({ label: d.display_name, lat: d.lat, lon: d.lon }));
+      dl.innerHTML = lastResults.map(r =>
+        `<option value="${r.label.replace(/"/g,'&quot;')}"></option>`
+      ).join('');
+      status.textContent = lastResults.length ? '' : 'No results';
+    } catch {
+      status.textContent = 'Lookup failed';
+    }
+  }
+
+  function applyBestMatch(){
+    const v = (loc.value || '').trim();
+    if (!v){ lat.value=''; lon.value=''; status.textContent=''; return; }
+    let hit = lastResults.find(r => r.label === v);
+    if (!hit && lastResults.length) hit = lastResults[0];
+    if (hit){
+      lat.value = hit.lat;
+      lon.value = hit.lon;
+      showPin(parseFloat(hit.lat), parseFloat(hit.lon));
+      status.textContent = 'Coordinates filled';
+    } else {
+      status.textContent = 'Pick a suggestion or click Find';
+    }
+  }
+
+  loc.addEventListener('input',  () => debounce(() => search(loc.value), 250));
+  loc.addEventListener('change', applyBestMatch);
+  loc.addEventListener('blur',   applyBestMatch);
+  loc.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); applyBestMatch(); }});
+  document.getElementById('addr-find').addEventListener('click', () => { search(loc.value).then(applyBestMatch); });
+
+  // if validation re-rendered with coords, show a pin
+  if (lat.value && lon.value) showPin(parseFloat(lat.value), parseFloat(lon.value));
+})();
+</script>
 {% endblock %}
