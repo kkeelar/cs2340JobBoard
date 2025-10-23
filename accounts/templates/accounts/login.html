@@ -11,6 +11,14 @@
         <form method="post" novalidate>
           {% csrf_token %}
 
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
           <!-- Username -->
           <div class="mb-3">
             <label for="id_username" class="form-label">Username</label>
