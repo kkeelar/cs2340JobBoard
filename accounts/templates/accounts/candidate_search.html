@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Candidate Search{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Search Candidates</h2>
+
+  <form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+      <input type="text" name="q" class="form-control" placeholder="Name or keyword" value="{{ query }}">
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="location" class="form-control" placeholder="Location" value="{{ location }}">
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="skill" class="form-control" placeholder="Skill (e.g. Python)" value="{{ skill }}">
+    </div>
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+  </form>
+
+  {% if candidates %}
+    <div class="row">
+      {% for c in candidates %}
+        <div class="col-md-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5>{{ c.user.username }}</h5>
+              {% if c.headline %}<p class="text-muted">{{ c.headline }}</p>{% endif %}
+              {% if c.location %}<p><i class="bi bi-geo-alt"></i> {{ c.location }}</p>{% endif %}
+              {% if c.skill_list %}
+                <p>
+                    {% for s in c.skill_list %}
+                    <span class="badge bg-primary">{{ s }}</span>
+                    {% endfor %}
+                </p>
+                {% endif %}
+
+              <a href="{% url 'profile_detail' c.user.username %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No matching candidates found.</p>
+  {% endif %}
+</div>
+{% endblock %}
