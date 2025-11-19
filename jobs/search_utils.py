@@ -30,16 +30,30 @@ def find_candidates_for_search(saved_search):
     if saved_search.location:
         candidates = candidates.filter(location__icontains=saved_search.location)
     
-    # Skills filter
+    # Skills filter - use proper skill parsing for accurate matching
     if saved_search.skills:
-        skill_list = [skill.strip() for skill in saved_search.skills.split(',') if skill.strip()]
-        if skill_list:
-            # Parse skills for matching
-            search_skills = set(parse_skills(saved_search.skills))
-            skill_query = Q()
-            for skill in skill_list:
-                skill_query |= Q(skills__icontains=skill)
-            candidates = candidates.filter(skill_query)
+        search_skills = set(parse_skills(saved_search.skills))
+        if search_skills:
+            # Since database queries can't easily do set intersection,
+            # we need to filter in Python. First get candidates with non-empty skills
+            # that match the text/location filters above.
+            candidates_with_skills = candidates.exclude(skills__isnull=True).exclude(skills__exact='')
+            
+            # Filter candidates whose parsed skills overlap with search skills
+            matching_candidates = []
+            for candidate in candidates_with_skills:
+                if not candidate.skills:
+                    continue
+                candidate_skills = set(parse_skills(candidate.skills))
+                if search_skills & candidate_skills:  # Set intersection - has overlapping skills
+                    matching_candidates.append(candidate.id)
+            
+            # Filter the queryset to only include matching candidates
+            if matching_candidates:
+                candidates = candidates.filter(id__in=matching_candidates)
+            else:
+                # No matches found, return empty queryset
+                candidates = candidates.none()
     
     return candidates
 
