@@ -77,6 +77,19 @@
               </a>
             </div>
           {% endif %}
+          
+          <!-- Candidate Recommendations (for job owners) -->
+          {% if is_job_owner %}
+            <div class="alert alert-success d-flex justify-content-between align-items-center">
+              <div>
+                <strong><i class="fas fa-user-check"></i> Find Qualified Candidates</strong>
+                <p class="mb-0 small">Get recommendations based on job requirements</p>
+              </div>
+              <a href="{% url 'job_candidate_recommendations' job.pk %}" class="btn btn-sm btn-success">
+                View Recommendations
+              </a>
+            </div>
+          {% endif %}
         </div>
       </div>
       

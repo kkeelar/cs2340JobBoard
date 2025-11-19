@@ -34,4 +34,14 @@ urlpatterns = [
     path("api/jobs/", views.jobs_api, name="jobs_api"),
     path("api/recommendations/", views.recommendations_api, name="recommendations_api"),
 
+    # Saved candidate searches
+    path('searches/', views.saved_candidate_searches, name='saved_candidate_searches'),
+    path('searches/create/', views.create_saved_search, name='create_saved_search'),
+    path('searches/<int:pk>/edit/', views.edit_saved_search, name='edit_saved_search'),
+    path('searches/<int:pk>/delete/', views.delete_saved_search, name='delete_saved_search'),
+    path('searches/<int:pk>/matches/', views.saved_search_matches, name='saved_search_matches'),
+
+    # Candidate recommendations for jobs
+    path('<int:pk>/recommendations/', views.job_candidate_recommendations, name='job_candidate_recommendations'),
+
 ]

@@ -20,9 +20,8 @@
       <!-- Recruiter nav -->
       <a class="nav-link" href="{% url 'recruiter_dashboard' %}">Dashboard</a>
       <a class="nav-link" href="{% url 'post_job' %}">Post Job</a>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'candidate_search' %}">Find Candidates</a>
-      </li>
+      <a class="nav-link" href="{% url 'candidate_search' %}">Find Candidates</a>
+      <a class="nav-link" href="{% url 'saved_candidate_searches' %}">Saved Searches</a>
     {% else %}
       <!-- Job seeker nav -->
       <a class="nav-link" href="{% url 'job_list' %}">Browse Jobs</a>

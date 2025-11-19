@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Matches for {{ saved_search.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1>Matches for "{{ saved_search.name }}"</h1>
+      <p class="text-muted">
+        {{ total_matches }} total matches
+        {% if new_matches > 0 %}
+          <span class="badge bg-warning text-dark ms-2">{{ new_matches }} new</span>
+        {% endif %}
+      </p>
+    </div>
+    <a href="{% url 'saved_candidate_searches' %}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Searches
+    </a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5>Search Criteria</h5>
+      <p class="mb-1"><strong>Keywords:</strong> {{ saved_search.search_query|default:"—" }}</p>
+      <p class="mb-1"><strong>Location:</strong> {{ saved_search.location|default:"—" }}</p>
+      <p class="mb-0"><strong>Skills:</strong> {{ saved_search.skills|default:"—" }}</p>
+    </div>
+  </div>
+
+  {% if matches %}
+    <div class="row">
+      {% for match in matches %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">{{ match.candidate.user.get_full_name|default:match.candidate.user.username }}</h5>
+              {% if match.candidate.headline %}
+                <p class="text-muted small mb-2">{{ match.candidate.headline }}</p>
+              {% endif %}
+              
+              {% if match.candidate.location %}
+                <p class="small mb-2">
+                  <i class="fas fa-map-marker-alt"></i> {{ match.candidate.location }}
+                </p>
+              {% endif %}
+              
+              {% if match.candidate.skill_list %}
+                <div class="mb-2">
+                  {% for skill in match.candidate.skill_list|slice:":5" %}
+                    <span class="badge bg-primary me-1">{{ skill }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              <div class="d-flex justify-content-between align-items-center">
+                <a href="{% url 'profile_detail' match.candidate.user.username %}" class="btn btn-sm btn-primary">
+                  View Profile
+                </a>
+                <small class="text-muted">
+                  Matched: {{ match.first_matched_date|date:"M d, Y" }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if matches.has_other_pages %}
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if matches.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ matches.previous_page_number }}">Previous</a>
+            </li>
+          {% endif %}
+          
+          <li class="page-item active">
+            <span class="page-link">Page {{ matches.number }} of {{ matches.paginator.num_pages }}</span>
+          </li>
+          
+          {% if matches.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ matches.next_page_number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-info">
+      <h5>No matches yet</h5>
+      <p>No candidates have matched this search criteria yet. Check back later or adjust your search criteria.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

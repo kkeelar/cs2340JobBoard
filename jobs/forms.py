@@ -1,5 +1,5 @@
 from django import forms
-from .models import Job, JobApplication
+from .models import Job, JobApplication, SavedCandidateSearch
 
 
 class JobSearchForm(forms.Form):
@@ -190,4 +190,46 @@ class ApplicationStatusUpdateForm(forms.ModelForm):
         }
         help_texts = {
             'recruiter_notes': 'These notes are only visible to recruiters and staff.',
+        }
+
+
+class SavedCandidateSearchForm(forms.ModelForm):
+    """Form for creating/editing saved candidate searches"""
+
+    class Meta:
+        model = SavedCandidateSearch
+        fields = ['name', 'search_query', 'location', 'skills', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., Python Developers in SF'
+            }),
+            'search_query': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Name, headline, or bio keywords'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'City, State, or "Remote"'
+            }),
+            'skills': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'e.g., Python, Django, React, JavaScript'
+            }),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'name': 'Search Name',
+            'search_query': 'Keywords',
+            'location': 'Location',
+            'skills': 'Required Skills',
+            'is_active': 'Active (receive notifications)',
+        }
+        help_texts = {
+            'name': 'Give this search a memorable name',
+            'search_query': 'Search in candidate names, headlines, and bios',
+            'location': 'Filter candidates by location',
+            'skills': 'Comma-separated list of required skills',
+            'is_active': 'If checked, you will receive email notifications when new candidates match this search',
         }

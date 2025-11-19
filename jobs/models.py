@@ -124,10 +124,53 @@ class SavedJob(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_jobs')
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='saved_by')
     saved_date = models.DateTimeField(default=timezone.now)
-
+    
     class Meta:
         unique_together = ('user', 'job')
         ordering = ['-saved_date']
-
+        
     def __str__(self):
         return f"{self.user.username} saved {self.job.title}"
+
+
+class SavedCandidateSearch(models.Model):
+    """Allow recruiters to save candidate search criteria and get notified of new matches"""
+    recruiter = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='saved_searches', limit_choices_to={'role': 'recruiter'})
+    name = models.CharField(max_length=255, help_text="Name for this search (e.g., 'Python Developers in SF')")
+    
+    # Search criteria
+    search_query = models.CharField(max_length=255, blank=True, help_text="Name, headline, or bio keywords")
+    location = models.CharField(max_length=255, blank=True, help_text="Location filter")
+    skills = models.TextField(blank=True, help_text="Comma-separated list of required skills")
+    
+    # Tracking
+    is_active = models.BooleanField(default=True, help_text="If active, will check for new matches and send notifications")
+    created_date = models.DateTimeField(default=timezone.now)
+    last_checked = models.DateTimeField(null=True, blank=True, help_text="Last time we checked for new matches")
+    last_notified = models.DateTimeField(null=True, blank=True, help_text="Last time we sent a notification")
+    
+    class Meta:
+        ordering = ['-created_date']
+        
+    def __str__(self):
+        return f"{self.name} ({self.recruiter.user.username})"
+    
+    def get_skills_list(self):
+        """Return skills as a list"""
+        return [skill.strip() for skill in self.skills.split(',') if skill.strip()]
+
+
+class CandidateSearchMatch(models.Model):
+    """Track which candidates match a saved search and whether they've been notified"""
+    saved_search = models.ForeignKey(SavedCandidateSearch, on_delete=models.CASCADE, related_name='matches')
+    candidate = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='search_matches', limit_choices_to={'role': 'seeker'})
+    first_matched_date = models.DateTimeField(default=timezone.now)
+    notified = models.BooleanField(default=False, help_text="Whether recruiter has been notified about this match")
+    notified_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('saved_search', 'candidate')
+        ordering = ['-first_matched_date']
+        
+    def __str__(self):
+        return f"{self.candidate.user.username} matches {self.saved_search.name}"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Job, JobApplication, SavedJob
+from .models import Job, JobApplication, SavedJob, SavedCandidateSearch, CandidateSearchMatch
 
 
 @admin.register(Job)
@@ -67,3 +67,41 @@ class SavedJobAdmin(admin.ModelAdmin):
     readonly_fields = ['saved_date']
     date_hierarchy = 'saved_date'
     ordering = ['-saved_date']
+
+
+@admin.register(SavedCandidateSearch)
+class SavedCandidateSearchAdmin(admin.ModelAdmin):
+    list_display = ['name', 'recruiter', 'is_active', 'match_count', 'created_date', 'last_checked', 'last_notified']
+    list_filter = ['is_active', 'created_date', 'last_checked']
+    search_fields = ['name', 'recruiter__user__username', 'search_query', 'location', 'skills']
+    readonly_fields = ['created_date', 'last_checked', 'last_notified']
+    list_editable = ['is_active']
+    date_hierarchy = 'created_date'
+    ordering = ['-created_date']
+    
+    def match_count(self, obj):
+        return obj.matches.count()
+    match_count.short_description = 'Matches'
+    
+    fieldsets = (
+        ('Search Info', {
+            'fields': ('name', 'recruiter', 'is_active')
+        }),
+        ('Search Criteria', {
+            'fields': ('search_query', 'location', 'skills')
+        }),
+        ('Tracking', {
+            'fields': ('created_date', 'last_checked', 'last_notified'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(CandidateSearchMatch)
+class CandidateSearchMatchAdmin(admin.ModelAdmin):
+    list_display = ['candidate', 'saved_search', 'first_matched_date', 'notified', 'notified_date']
+    list_filter = ['notified', 'first_matched_date', 'notified_date']
+    search_fields = ['candidate__user__username', 'saved_search__name']
+    readonly_fields = ['first_matched_date', 'notified_date']
+    date_hierarchy = 'first_matched_date'
+    ordering = ['-first_matched_date']

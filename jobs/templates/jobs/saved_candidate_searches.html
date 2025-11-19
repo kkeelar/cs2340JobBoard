@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Saved Candidate Searches{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Saved Candidate Searches</h1>
+    <a href="{% url 'create_saved_search' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Create New Search
+    </a>
+  </div>
+
+  {% if searches %}
+    <div class="row">
+      {% for search in searches %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title">{{ search.name }}</h5>
+                {% if search.is_active %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </div>
+              
+              <p class="text-muted small mb-2">
+                <strong>Keywords:</strong> {{ search.search_query|default:"—" }}<br>
+                <strong>Location:</strong> {{ search.location|default:"—" }}<br>
+                <strong>Skills:</strong> {{ search.skills|truncatewords:10|default:"—" }}
+              </p>
+              
+              <div class="mb-3">
+                <small class="text-muted">
+                  <i class="fas fa-users"></i> {{ search.match_count }} total matches
+                  {% if search.new_match_count > 0 %}
+                    <span class="badge bg-warning text-dark ms-2">{{ search.new_match_count }} new</span>
+                  {% endif %}
+                </small>
+              </div>
+              
+              <div class="btn-group w-100" role="group">
+                <a href="{% url 'saved_search_matches' search.pk %}" class="btn btn-sm btn-outline-primary">
+                  View Matches
+                </a>
+                <a href="{% url 'edit_saved_search' search.pk %}" class="btn btn-sm btn-outline-secondary">
+                  Edit
+                </a>
+                <form method="post" action="{% url 'delete_saved_search' search.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" 
+                          onclick="return confirm('Are you sure you want to delete this search?')">
+                    Delete
+                  </button>
+                </form>
+              </div>
+              
+              <small class="text-muted d-block mt-2">
+                Created: {{ search.created_date|date:"M d, Y" }}
+                {% if search.last_checked %}
+                  <br>Last checked: {{ search.last_checked|date:"M d, Y" }}
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <h5>No saved searches yet</h5>
+      <p>Create a saved search to get notified when new candidates match your criteria.</p>
+      <a href="{% url 'create_saved_search' %}" class="btn btn-primary">Create Your First Search</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

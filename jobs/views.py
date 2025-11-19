@@ -9,12 +9,14 @@ from math import pi, sin, cos, asin, sqrt
 
 from django.views.decorators.http import require_POST
 
-from .models import Job, JobApplication, SavedJob
-from .forms import JobSearchForm, JobApplicationForm, JobPostForm, ApplicationStatusUpdateForm
+from .models import Job, JobApplication, SavedJob, SavedCandidateSearch, CandidateSearchMatch
+from .forms import JobSearchForm, JobApplicationForm, JobPostForm, ApplicationStatusUpdateForm, SavedCandidateSearchForm
 from .recommendations import (
     format_skills_for_display,
     recommend_jobs_for_profile,
+    recommend_candidates_for_job,
 )
+from accounts.models import Profile
 
 @login_required
 def recruiter_dashboard(request):
@@ -149,6 +151,7 @@ def job_detail(request, pk):
     # Check if user has already applied or saved this job
     user_application = None
     has_saved = False
+    is_job_owner = False
     if request.user.is_authenticated:
         try:
             user_application = JobApplication.objects.get(job=job, applicant=request.user)
@@ -156,11 +159,17 @@ def job_detail(request, pk):
             pass
 
         has_saved = SavedJob.objects.filter(user=request.user, job=job).exists()
+        
+        # Check if user is the job owner (recruiter)
+        profile = getattr(request.user, "profile", None)
+        if profile and job.posted_by == profile:
+            is_job_owner = True
 
     context = {
         'job': job,
         'user_application': user_application,
         'has_saved': has_saved,
+        'is_job_owner': is_job_owner,
         'required_skills': job.get_required_skills_list(),
     }
     return render(request, 'jobs/job_detail.html', context)
@@ -496,3 +505,141 @@ def recommendations_api(request):
     } for rec in recs]
 
     return JsonResponse({"recommendations": data})
+
+
+# ========== Saved Candidate Searches ==========
+
+@login_required
+def saved_candidate_searches(request):
+    """List all saved candidate searches for the recruiter"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        messages.error(request, "Only recruiters can access saved searches.")
+        return redirect("home")
+
+    searches = SavedCandidateSearch.objects.filter(recruiter=profile)
+    
+    # Get match counts for each search
+    for search in searches:
+        search.match_count = search.matches.count()
+        search.new_match_count = search.matches.filter(notified=False).count()
+
+    context = {
+        'searches': searches,
+    }
+    return render(request, 'jobs/saved_candidate_searches.html', context)
+
+
+@login_required
+def create_saved_search(request):
+    """Create a new saved candidate search"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        messages.error(request, "Only recruiters can create saved searches.")
+        return redirect("home")
+
+    if request.method == 'POST':
+        form = SavedCandidateSearchForm(request.POST)
+        if form.is_valid():
+            saved_search = form.save(commit=False)
+            saved_search.recruiter = profile
+            saved_search.save()
+            messages.success(request, f'Saved search "{saved_search.name}" created successfully!')
+            return redirect('saved_candidate_searches')
+    else:
+        # Pre-populate from candidate search if coming from there
+        form = SavedCandidateSearchForm(initial={
+            'search_query': request.GET.get('q', ''),
+            'location': request.GET.get('location', ''),
+            'skills': request.GET.get('skill', ''),
+        })
+
+    context = {
+        'form': form,
+        'action': 'Create',
+    }
+    return render(request, 'jobs/saved_search_form.html', context)
+
+
+@login_required
+def edit_saved_search(request, pk):
+    """Edit an existing saved candidate search"""
+    profile = getattr(request.user, "profile", None)
+    saved_search = get_object_or_404(SavedCandidateSearch, pk=pk, recruiter=profile)
+
+    if request.method == 'POST':
+        form = SavedCandidateSearchForm(request.POST, instance=saved_search)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Saved search "{saved_search.name}" updated successfully!')
+            return redirect('saved_candidate_searches')
+    else:
+        form = SavedCandidateSearchForm(instance=saved_search)
+
+    context = {
+        'form': form,
+        'saved_search': saved_search,
+        'action': 'Edit',
+    }
+    return render(request, 'jobs/saved_search_form.html', context)
+
+
+@login_required
+@require_POST
+def delete_saved_search(request, pk):
+    """Delete a saved candidate search"""
+    profile = getattr(request.user, "profile", None)
+    saved_search = get_object_or_404(SavedCandidateSearch, pk=pk, recruiter=profile)
+    
+    name = saved_search.name
+    saved_search.delete()
+    messages.success(request, f'Saved search "{name}" deleted successfully!')
+    return redirect('saved_candidate_searches')
+
+
+@login_required
+def saved_search_matches(request, pk):
+    """View all candidates that match a saved search"""
+    profile = getattr(request.user, "profile", None)
+    saved_search = get_object_or_404(SavedCandidateSearch, pk=pk, recruiter=profile)
+
+    matches = CandidateSearchMatch.objects.filter(saved_search=saved_search).select_related('candidate__user')
+    
+    # Add skill lists to each match's candidate
+    for match in matches:
+        match.candidate.skill_list = format_skills_for_display(match.candidate.skills)
+    
+    # Pagination
+    paginator = Paginator(matches, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'saved_search': saved_search,
+        'matches': page_obj,
+        'total_matches': paginator.count,
+        'new_matches': matches.filter(notified=False).count(),
+    }
+    return render(request, 'jobs/saved_search_matches.html', context)
+
+
+# ========== Candidate Recommendations for Jobs ==========
+
+@login_required
+def job_candidate_recommendations(request, pk):
+    """Show recommended candidates for a specific job"""
+    profile = getattr(request.user, "profile", None)
+    job = get_object_or_404(Job, pk=pk)
+    
+    # Only the job poster can see recommendations
+    if job.posted_by != profile:
+        messages.error(request, "You can only view recommendations for your own job postings.")
+        return redirect('job_detail', pk=pk)
+
+    recommendations = recommend_candidates_for_job(job, limit=20)
+
+    context = {
+        'job': job,
+        'recommendations': recommendations,
+    }
+    return render(request, 'jobs/job_candidate_recommendations.html', context)

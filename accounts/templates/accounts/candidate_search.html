@@ -18,6 +18,18 @@
       <button type="submit" class="btn btn-primary">Search</button>
     </div>
   </form>
+  
+  {% if user.is_authenticated and user.profile.role == "recruiter" %}
+    <div class="mb-3">
+      <a href="{% url 'create_saved_search' %}?q={{ query|urlencode }}&location={{ location|urlencode }}&skill={{ skill|urlencode }}" 
+         class="btn btn-outline-success">
+        <i class="fas fa-bookmark"></i> Save This Search
+      </a>
+      <a href="{% url 'saved_candidate_searches' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-list"></i> View Saved Searches
+      </a>
+    </div>
+  {% endif %}
 
   {% if candidates %}
     <div class="row">

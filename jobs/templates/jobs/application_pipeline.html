@@ -5,7 +5,15 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-  <h2 class="mb-4">Applicant Pipeline – {{ job.title }}</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Applicant Pipeline – {{ job.title }}</h2>
+    <div>
+      <a href="{% url 'job_candidate_recommendations' job.pk %}" class="btn btn-success">
+        <i class="fas fa-user-check"></i> View Candidate Recommendations
+      </a>
+      <a href="{% url 'recruiter_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
   <div class="row">
     {% for key, label in status_choices %}
       <div class="col-md-2">
@@ -42,7 +50,6 @@
     {% endfor %}
   </div>
 
-  <a href="{% url 'recruiter_dashboard' %}" class="btn btn-secondary mt-4">Back</a>
 </div>
 
 <script>

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Recommended Candidates for {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1>Recommended Candidates</h1>
+      <h3 class="h5 text-muted">{{ job.title }} at {{ job.company }}</h3>
+    </div>
+    <div>
+      <a href="{% url 'application_pipeline' job.pk %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Pipeline
+      </a>
+      <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-secondary">
+        View Job
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5>Job Requirements</h5>
+      <p class="mb-1"><strong>Location:</strong> {{ job.location }}</p>
+      <p class="mb-1"><strong>Required Skills:</strong> {{ job.required_skills|default:"—" }}</p>
+      <p class="mb-0"><strong>Experience Level:</strong> {{ job.experience_level }}</p>
+    </div>
+  </div>
+
+  {% if recommendations %}
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle"></i> 
+      These candidates match the required skills for this position. They are sorted by the number of matching skills.
+    </div>
+
+    <div class="row">
+      {% for rec in recommendations %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title">{{ rec.candidate.user.get_full_name|default:rec.candidate.user.username }}</h5>
+                <span class="badge bg-success">{{ rec.score }} match{{ rec.score|pluralize:"es" }}</span>
+              </div>
+              
+              {% if rec.candidate.headline %}
+                <p class="text-muted small mb-2">{{ rec.candidate.headline }}</p>
+              {% endif %}
+              
+              {% if rec.candidate.location %}
+                <p class="small mb-2">
+                  <i class="fas fa-map-marker-alt"></i> {{ rec.candidate.location }}
+                </p>
+              {% endif %}
+              
+              {% if rec.matched_skills %}
+                <div class="mb-3">
+                  <strong class="small">Matched Skills:</strong>
+                  <div class="mt-1">
+                    {% for skill in rec.matched_skills %}
+                      <span class="badge bg-primary me-1">{{ skill }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+              
+              <div class="d-flex gap-2">
+                <a href="{% url 'profile_detail' rec.candidate.user.username %}" class="btn btn-sm btn-primary flex-grow-1">
+                  View Full Profile
+                </a>
+                {% if not rec.candidate.user in job.applications.all|map:"applicant" %}
+                  <a href="{% url 'job_detail' job.pk %}" class="btn btn-sm btn-outline-secondary">
+                    View Job
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      <h5>No recommendations found</h5>
+      <p>We couldn't find any candidates that match the required skills for this position. Try adjusting the job requirements or check back later.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
