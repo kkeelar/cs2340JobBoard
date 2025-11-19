@@ -68,11 +68,9 @@
                 <a href="{% url 'profile_detail' rec.candidate.user.username %}" class="btn btn-sm btn-primary flex-grow-1">
                   View Full Profile
                 </a>
-                {% if not rec.candidate.user in job.applications.all|map:"applicant" %}
-                  <a href="{% url 'job_detail' job.pk %}" class="btn btn-sm btn-outline-secondary">
-                    View Job
-                  </a>
-                {% endif %}
+                <a href="{% url 'job_detail' job.pk %}" class="btn btn-sm btn-outline-secondary">
+                  View Job
+                </a>
               </div>
             </div>
           </div>
