@@ -26,6 +26,11 @@
         <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm">
           <i class="bi bi-pencil"></i> Edit Profile
         </a>
+        {% if profile.show_email or request.user.is_authenticated and request.user == profile.user %}
+          <p class="mb-2"><i class="bi bi-envelope"></i>
+            {{ profile.email|default:profile.user.email }}
+          </p>
+        {% endif %}
       </div>
     </div>
   </div>

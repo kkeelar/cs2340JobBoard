@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  {% comment %} Determine display name for header: use other if provided; fallback to 'Conversation' {% endcomment %}
+  {# Show subject (if any) and also the conversational header with other participant #}
+  <h2 class="mb-3">
+    {% if other_profile %}
+      Conversation with {{ other_profile.user.get_full_name|default:other_profile.user.username }}
+    {% else %}
+      Conversation
+    {% endif %}
+  </h2>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      {% for m in messages %}
+        <div class="d-flex {% if m.sender.user == request.user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3">
+          <div class="p-3 rounded {% if m.sender.user == request.user %}bg-primary text-white{% else %}bg-light text-dark{% endif %}" style="max-width:75%;">
+            <div class="small text-muted mb-1">{{ m.sender.user.get_full_name|default:m.sender.user.username }} • {{ m.sent_at|date:"M d, H:i" }}</div>
+            <div>{{ m.body|linebreaks }}</div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-muted">No messages yet. Use the form below to start the conversation.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Reply</h5>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+          {{ form.subject.label_tag }}
+          {{ form.subject }}
+        </div>
+        <div class="mb-2">
+          {{ form.body.label_tag }}
+          {{ form.body }}
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Send</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
