@@ -10,16 +10,25 @@ class CustomSignupForm(UserCreationForm):
         ('seeker', 'Job Seeker'),
         ('recruiter', 'Recruiter'),
     ]
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={"class": "form-control"}))
     role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.RadioSelect)
 
     class Meta:
         model = User
         fields = ("username", "email", "password1", "password2", "role")
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("A user with that email already exists.")
+        return email
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = [
+            # allow editing email from the edit profile page
+            "email",
             # existing fields:
             "headline", "bio", "location", "skills", "links",
             # privacy fields (new):
@@ -39,6 +48,8 @@ class ProfileForm(forms.ModelForm):
             "show_skills": "Show skills",
         }
         widgets = {
+            # explicit widget for email so it appears nicely in edit form
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
             "headline": forms.TextInput(attrs={"class": "form-control"}),
             "bio": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "location": forms.TextInput(attrs={"class": "form-control"}),
@@ -108,5 +119,41 @@ WorkFormSet = inlineformset_factory(
         "start_date": {"required": "Start date is required."},
     }
 )
+
+
+class MessageForm(forms.Form):
+    # Conversation messages no longer include a subject — only body is required.
+    body = forms.CharField(widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}), required=True)
+
+
+class EmailCandidateForm(forms.Form):
+    subject = forms.CharField(max_length=255, required=True, widget=forms.TextInput(attrs={"class": "form-control"}))
+    body = forms.CharField(widget=forms.Textarea(attrs={"class": "form-control", "rows": 6}), required=True)
+
+
+class ReplyForm(forms.Form):
+    body = forms.CharField(widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}), required=True)
+
+
+class EmailEditForm(forms.Form):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={"class": "form-control"}))
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if not email:
+            raise forms.ValidationError("Please provide an email address.")
+        # allow the same email as current user
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        qs = User.objects.filter(email__iexact=email)
+        if self.user:
+            qs = qs.exclude(pk=self.user.pk)
+        if qs.exists():
+            raise forms.ValidationError("A user with that email already exists.")
+        return email
 
 

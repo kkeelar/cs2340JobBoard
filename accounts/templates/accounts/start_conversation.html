@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Start Conversation with {{ candidate.user.get_full_name|default:candidate.user.username }}</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.body.label_tag }}
+      {{ form.body }}
+    </div>
+    <button type="submit" class="btn btn-primary">Send</button>
+    <a href="{% url 'profile_detail' candidate.user.username %}" class="btn btn-link">Cancel</a>
+  </form>
+</div>
+{% endblock %}

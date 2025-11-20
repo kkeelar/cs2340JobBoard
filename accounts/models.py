@@ -77,3 +77,54 @@ class WorkExperience(models.Model):
         return f"{self.position} at {self.company}"
 
 
+class Conversation(models.Model):
+    """A simple two-party conversation/thread."""
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.subject or f"Conversation {self.pk}"
+
+
+class Message(models.Model):
+    conversation = models.ForeignKey(Conversation, related_name="messages", on_delete=models.CASCADE)
+    sender = models.ForeignKey(Profile, related_name="sent_messages", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(Profile, related_name="received_messages", on_delete=models.CASCADE)
+    body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["sent_at"]
+
+    def __str__(self):
+        return f"{self.sender.user.username} -> {self.recipient.user.username}: {self.body[:30]}"
+
+
+class CandidateEmailLog(models.Model):
+    recruiter = models.ForeignKey(
+        Profile,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sent_emails",
+        limit_choices_to={'role': 'recruiter'},
+    )
+    candidate = models.ForeignKey(
+        Profile,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="received_emails",
+        limit_choices_to={'role': 'seeker'},
+    )
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    success = models.BooleanField(default=False)
+    error_text = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Email to {self.candidate.user.username if self.candidate else 'unknown'} by {self.recruiter.user.username if self.recruiter else 'unknown'} at {self.sent_at}"
+
+

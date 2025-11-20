@@ -23,6 +23,28 @@
     </div>
   </div>
 
+  {# Action buttons for recruiters when viewing a seeker profile #}
+  {% if request.user.is_authenticated and request.user.profile.role == 'recruiter' and profile.role == 'seeker' and not is_private_for_viewer %}
+    <div class="mb-3">
+      <a href="{% url 'start_conversation' profile.user.username %}" class="btn btn-outline-primary me-2">Message</a>
+      {# Launch the user's email client / Gmail compose with recipient prefilled instead of using internal send flow #}
+      {% with to=profile.email|default:profile.user.email %}
+        {% if to %}
+          {% with subj='Job opportunity from JobBoard' %}
+            {% with body_text='Hi '|add:profile.user.username|add:',%0D%0A%0D%0AI came across your profile on JobBoard and would like to discuss a role with you.%0D%0A%0D%0ARegards,%0D%0A' %}
+              <a class="btn btn-outline-secondary" target="_blank"
+                 href="mailto:{{ to|urlencode }}?subject={{ subj|urlencode }}&body={{ body_text }}">
+                Email
+              </a>
+            {% endwith %}
+          {% endwith %}
+        {% else %}
+          <button class="btn btn-outline-secondary" disabled title="Candidate has no email">Email</button>
+        {% endif %}
+      {% endwith %}
+    </div>
+  {% endif %}
+
   {% if is_private_for_viewer %}
     <!-- Instagram-style private shell -->
     <div class="card shadow-sm">

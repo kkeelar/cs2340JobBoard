@@ -36,6 +36,8 @@ class Command(BaseCommand):
             profile.location = "San Francisco, CA"
             profile.skills = "Python, JavaScript, React, Django, PostgreSQL, AWS, Docker"
             profile.links = "https://linkedin.com/in/testuser, https://github.com/testuser"
+            # mirror email to profile for easier contact
+            profile.email = user.email
             profile.save()
             self.stdout.write(
                 self.style.SUCCESS('Updated test user profile with sample data')

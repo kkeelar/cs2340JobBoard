@@ -12,6 +12,11 @@ urlpatterns = [
     path("recruiter/dashboard/", views.recruiter_dashboard, name="recruiter_dashboard"),
 
     path("recruiter/search/", views.candidate_search, name="candidate_search"),
+    # Messaging and email
+    path("messages/", views.conversation_list, name="conversation_list"),
+    path("messages/<int:pk>/", views.conversation_detail, name="conversation_detail"),
+    path("messages/start/<str:username>/", views.start_conversation, name="start_conversation"),
+    path("email_candidate/<str:username>/", views.email_candidate, name="email_candidate"),
 
 
 
