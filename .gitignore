@@ -12,3 +12,8 @@ db.sqlite3
 # VSCode / PyCharm
 .vscode/
 .idea/
+
+# Python anywhere needed this 
+static/
+venv/
+
