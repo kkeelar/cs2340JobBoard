@@ -1,0 +1,25 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+{{ block.super }}
+<div class="module">
+    <table>
+        <caption>
+            <a href="#" class="section">Reporting & Exports</a>
+        </caption>
+        <tr class="model-none">
+            <th scope="row">
+                <a href="{% url 'admin_reporting_dashboard' %}">
+                    <i class="fas fa-chart-bar"></i> Reporting Dashboard
+                </a>
+            </th>
+            <td>
+                <a href="{% url 'admin_reporting_dashboard' %}" class="addlink">
+                    View & Export Data
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
+{% endblock %}
+

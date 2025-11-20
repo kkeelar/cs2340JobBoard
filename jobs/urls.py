@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import admin_views
 
 urlpatterns = [
     # User log in / sign up
@@ -47,5 +48,13 @@ urlpatterns = [
     # Applicant location map
     path('applicants/map/', views.applicant_location_map, name='applicant_location_map'),
     path('api/applicants/', views.applicants_api, name='applicants_api'),
+
+    # Admin reporting and CSV exports
+    path('admin/reporting/', admin_views.admin_reporting_dashboard, name='admin_reporting_dashboard'),
+    path('admin/export/jobs/', admin_views.export_jobs, name='admin_export_jobs'),
+    path('admin/export/applications/', admin_views.export_applications, name='admin_export_applications'),
+    path('admin/export/users/', admin_views.export_users, name='admin_export_users'),
+    path('admin/export/profiles/', admin_views.export_profiles, name='admin_export_profiles'),
+    path('admin/export/stats/', admin_views.export_usage_stats, name='admin_export_stats'),
 
 ]

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Admin Reporting Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-1">📊 Admin Reporting Dashboard</h1>
+      <p class="text-muted mb-0">Export data and view usage statistics for stakeholder reporting</p>
+    </div>
+    <a href="/admin/" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Admin
+    </a>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h4>{{ total_users }}</h4>
+          <small>Total Users</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h4>{{ total_recruiters }}</h4>
+          <small>Recruiters</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h4>{{ total_seekers }}</h4>
+          <small>Job Seekers</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card bg-warning text-dark">
+        <div class="card-body">
+          <h4>{{ total_jobs }}</h4>
+          <small>Total Jobs ({{ active_jobs }} active)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card bg-secondary text-white">
+        <div class="card-body">
+          <h4>{{ total_applications }}</h4>
+          <small>Total Applications</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card bg-dark text-white">
+        <div class="card-body">
+          <h4>{{ recent_jobs }}</h4>
+          <small>Jobs Posted (Last 30 Days)</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h4>{{ recent_applications }}</h4>
+          <small>Applications (Last 30 Days)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Export Section -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-download"></i> CSV Exports</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-4">Download data exports for reporting and analysis purposes.</p>
+      
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <div class="card border">
+            <div class="card-body">
+              <h6 class="card-title">Jobs Export</h6>
+              <p class="card-text text-muted small">Export all job postings with details and statistics.</p>
+              <div class="btn-group" role="group">
+                <a href="{% url 'admin_export_jobs' %}" class="btn btn-primary btn-sm">
+                  <i class="fas fa-file-csv"></i> Export All Jobs
+                </a>
+                <a href="{% url 'admin_export_jobs' %}?is_active=true" class="btn btn-outline-primary btn-sm">
+                  Active Only
+                </a>
+                <a href="{% url 'admin_export_jobs' %}?is_active=false" class="btn btn-outline-secondary btn-sm">
+                  Inactive Only
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="card border">
+            <div class="card-body">
+              <h6 class="card-title">Applications Export</h6>
+              <p class="card-text text-muted small">Export all job applications with applicant and job details.</p>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'admin_export_applications' %}" class="btn btn-success btn-sm">
+                  <i class="fas fa-file-csv"></i> Export All
+                </a>
+                {% for status in applications_by_status_list %}
+                <a href="{% url 'admin_export_applications' %}?status={{ status.code }}" class="btn btn-outline-success btn-sm">
+                  {{ status.name }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="card border">
+            <div class="card-body">
+              <h6 class="card-title">Users Export</h6>
+              <p class="card-text text-muted small">Export all user accounts with profile information.</p>
+              <div class="btn-group" role="group">
+                <a href="{% url 'admin_export_users' %}" class="btn btn-info btn-sm">
+                  <i class="fas fa-file-csv"></i> Export All Users
+                </a>
+                <a href="{% url 'admin_export_users' %}?role=recruiter" class="btn btn-outline-info btn-sm">
+                  Recruiters Only
+                </a>
+                <a href="{% url 'admin_export_users' %}?role=seeker" class="btn btn-outline-info btn-sm">
+                  Seekers Only
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <div class="card border">
+            <div class="card-body">
+              <h6 class="card-title">Profiles Export</h6>
+              <p class="card-text text-muted small">Export all user profiles with complete information.</p>
+              <div class="btn-group" role="group">
+                <a href="{% url 'admin_export_profiles' %}" class="btn btn-warning btn-sm text-dark">
+                  <i class="fas fa-file-csv"></i> Export All Profiles
+                </a>
+                <a href="{% url 'admin_export_profiles' %}?role=recruiter" class="btn btn-outline-warning btn-sm">
+                  Recruiters Only
+                </a>
+                <a href="{% url 'admin_export_profiles' %}?role=seeker" class="btn btn-outline-warning btn-sm">
+                  Seekers Only
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card border-primary">
+            <div class="card-body">
+              <h6 class="card-title">Usage Statistics Export</h6>
+              <p class="card-text text-muted small">Export aggregate usage statistics and metrics for reporting.</p>
+              <a href="{% url 'admin_export_stats' %}" class="btn btn-primary">
+                <i class="fas fa-file-csv"></i> Export Usage Statistics
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Breakdown -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Applications by Status</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th class="text-end">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for status in applications_by_status_list %}
+              <tr>
+                <td>{{ status.name }}</td>
+                <td class="text-end">{{ status.count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Jobs by Work Type</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Work Type</th>
+                <th class="text-end">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for work_type_name, count in jobs_by_work_type.items %}
+              <tr>
+                <td>{{ work_type_name }}</td>
+                <td class="text-end">{{ count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Recruiters and Jobs -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Top Recruiters by Job Count</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Recruiter</th>
+                <th class="text-end">Jobs Posted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for recruiter in top_recruiters %}
+              <tr>
+                <td>{{ recruiter.user.username }}</td>
+                <td class="text-end">{{ recruiter.job_count }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-muted">No data available</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Top Jobs by Application Count</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Job Title</th>
+                <th class="text-end">Applications</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in top_jobs %}
+              <tr>
+                <td>{{ job.title|truncatewords:5 }}</td>
+                <td class="text-end">{{ job.application_count }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-muted">No data available</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
