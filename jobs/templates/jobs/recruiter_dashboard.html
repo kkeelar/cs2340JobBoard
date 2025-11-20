@@ -26,9 +26,14 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4>Your Job Listings</h4>
-    <a href="{% url 'post_job' %}" class="btn btn-primary">
-      <i class="fas fa-plus"></i> Post New Job
-    </a>
+    <div class="d-flex gap-2">
+      <a href="{% url 'applicant_location_map' %}" class="btn btn-info text-white">
+        <i class="fas fa-map-marker-alt"></i> View Applicant Locations
+      </a>
+      <a href="{% url 'post_job' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Post New Job
+      </a>
+    </div>
   </div>
   {% for job in jobs %}
   <div class="list-group-item list-group-item-action mb-2 shadow-sm rounded">

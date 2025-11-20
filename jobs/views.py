@@ -643,3 +643,89 @@ def job_candidate_recommendations(request, pk):
         'recommendations': recommendations,
     }
     return render(request, 'jobs/job_candidate_recommendations.html', context)
+
+
+@login_required
+def applicant_location_map(request):
+    """View showing applicants by location on a map with clustering"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        messages.error(request, "Only recruiters can view applicant locations.")
+        return redirect("home")
+
+    # Get all jobs posted by this recruiter
+    jobs = Job.objects.filter(posted_by=profile)
+    
+    # Get all unique applicants for these jobs
+    applications = JobApplication.objects.filter(job__in=jobs).select_related('applicant')
+    
+    context = {
+        'total_jobs': jobs.count(),
+        'total_applicants': applications.count(),
+    }
+    return render(request, 'jobs/applicant_location_map.html', context)
+
+
+@login_required
+def applicants_api(request):
+    """API endpoint returning applicant locations for a recruiter"""
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role != "recruiter":
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    # Get all jobs posted by this recruiter
+    jobs = Job.objects.filter(posted_by=profile)
+    
+    # Get all applications for these jobs
+    applications = JobApplication.objects.filter(job__in=jobs).select_related(
+        'applicant__profile', 'job'
+    ).exclude(
+        applicant__profile__latitude__isnull=True
+    ).exclude(
+        applicant__profile__longitude__isnull=True
+    )
+    
+    # Group applicants by location (lat/lon) to show counts
+    location_map = {}
+    for app in applications:
+        try:
+            profile_obj = app.applicant.profile
+        except Profile.DoesNotExist:
+            continue
+        if profile_obj.latitude is None or profile_obj.longitude is None:
+            continue
+        
+        # Create a location key rounded to 4 decimal places (~11 meters precision)
+        loc_key = (round(profile_obj.latitude, 4), round(profile_obj.longitude, 4))
+        
+        if loc_key not in location_map:
+            location_map[loc_key] = {
+                'lat': profile_obj.latitude,
+                'lon': profile_obj.longitude,
+                'location': profile_obj.location or 'Unknown',
+                'count': 0,
+                'applicants': []
+            }
+        
+        location_map[loc_key]['count'] += 1
+        location_map[loc_key]['applicants'].append({
+            'name': app.applicant.get_full_name() or app.applicant.username,
+            'email': app.applicant.email or profile_obj.email or '',
+            'headline': profile_obj.headline or '',
+            'job_title': app.job.title,
+            'status': app.get_status_display(),
+        })
+    
+    # Convert to list format
+    locations = [
+        {
+            'lat': loc['lat'],
+            'lon': loc['lon'],
+            'location': loc['location'],
+            'count': loc['count'],
+            'applicants': loc['applicants'][:10]  # Limit to first 10 for popup
+        }
+        for loc in location_map.values()
+    ]
+    
+    return JsonResponse({"locations": locations})

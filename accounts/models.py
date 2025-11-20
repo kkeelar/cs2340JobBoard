@@ -14,6 +14,8 @@ class Profile(models.Model):
     headline = models.CharField(max_length=255, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
+    latitude = models.FloatField(null=True, blank=True, help_text="Latitude for location mapping")
+    longitude = models.FloatField(null=True, blank=True, help_text="Longitude for location mapping")
     skills = models.TextField(blank=True, null=True, help_text="Comma-separated list of skills")
     links = models.TextField(blank=True, null=True, help_text="Comma-separated external links")
 

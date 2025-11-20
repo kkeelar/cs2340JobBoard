@@ -44,4 +44,8 @@ urlpatterns = [
     # Candidate recommendations for jobs
     path('<int:pk>/recommendations/', views.job_candidate_recommendations, name='job_candidate_recommendations'),
 
+    # Applicant location map
+    path('applicants/map/', views.applicant_location_map, name='applicant_location_map'),
+    path('api/applicants/', views.applicants_api, name='applicants_api'),
+
 ]

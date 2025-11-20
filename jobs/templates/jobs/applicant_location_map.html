@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Applicant Locations Map{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-1">📍 Applicant Locations</h1>
+      <p class="text-muted mb-0">View clusters of applicants by location on the map</p>
+    </div>
+    <a href="{% url 'recruiter_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div id="applicant-map" class="rounded-4 shadow-sm" style="height: 600px; overflow: hidden;"></div>
+      <div class="text-muted small mt-2" id="map-status">Loading map…</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h5>{{ total_jobs }}</h5>
+          <small>Total Jobs Posted</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h5>{{ total_applicants }}</h5>
+          <small>Total Applicants</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h5 id="location-count">-</h5>
+          <small>Unique Locations</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Leaflet MarkerCluster plugin for clustering -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+<script>
+(() => {
+  const mapEl = document.getElementById('applicant-map');
+  if (!mapEl) return;
+
+  const statusEl = document.getElementById('map-status');
+  const locationCountEl = document.getElementById('location-count');
+  
+  // Default map center (United States center)
+  const defaultLat = 39.8283;
+  const defaultLon = -98.5795;
+  
+  // Initialize map
+  const map = L.map('applicant-map', { zoomControl: true, attributionControl: true })
+               .setView([defaultLat, defaultLon], 4);
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Initialize marker cluster group
+  const markers = L.markerClusterGroup({
+    chunkedLoading: true,
+    maxClusterRadius: 50
+  });
+
+  async function loadApplicants() {
+    try {
+      statusEl.textContent = 'Loading applicant locations…';
+      
+      const response = await fetch("{% url 'applicants_api' %}", {
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load applicant data');
+      }
+      
+      const data = await response.json();
+      const locations = data.locations || [];
+      
+      // Clear existing markers
+      markers.clearLayers();
+      
+      if (locations.length === 0) {
+        statusEl.textContent = 'No applicant locations found. Applicants need to have their location coordinates set.';
+        locationCountEl.textContent = '0';
+        return;
+      }
+      
+      // Add markers for each location
+      locations.forEach(loc => {
+        const popupContent = formatPopup(loc);
+        const marker = L.marker([loc.lat, loc.lon]);
+        marker.bindPopup(popupContent);
+        markers.addLayer(marker);
+      });
+      
+      // Add marker cluster group to map
+      map.addLayer(markers);
+      
+      // Fit map to show all markers
+      if (locations.length > 0) {
+        map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+      }
+      
+      // Update status
+      const totalApplicants = locations.reduce((sum, loc) => sum + loc.count, 0);
+      statusEl.textContent = `Showing ${locations.length} location${locations.length === 1 ? '' : 's'} with ${totalApplicants} applicant${totalApplicants === 1 ? '' : 's'}.`;
+      locationCountEl.textContent = locations.length;
+      
+    } catch (err) {
+      console.error('Error loading applicants:', err);
+      statusEl.textContent = 'Unable to load applicant locations. Please try again later.';
+      locationCountEl.textContent = '-';
+    }
+  }
+
+  function formatPopup(location) {
+    const escape = (s = '') => ('' + s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+    
+    const locationName = escape(location.location);
+    const count = location.count;
+    const applicants = location.applicants || [];
+    
+    let html = `
+      <div class="map-popup" style="min-width: 250px; max-width: 400px;">
+        <h6 class="mb-2">${locationName}</h6>
+        <div class="badge bg-primary mb-2">${count} applicant${count === 1 ? '' : 's'}</div>
+        <div class="applicant-list" style="max-height: 300px; overflow-y: auto;">
+    `;
+    
+    if (applicants.length > 0) {
+      html += '<ul class="list-unstyled mb-0">';
+      applicants.forEach(applicant => {
+        const name = escape(applicant.name);
+        const email = escape(applicant.email || 'No email');
+        const headline = escape(applicant.headline || '');
+        const jobTitle = escape(applicant.job_title || '');
+        const status = escape(applicant.status || '');
+        
+        html += `
+          <li class="mb-2 pb-2 border-bottom">
+            <strong>${name}</strong><br>
+            ${headline ? `<small class="text-muted">${headline}</small><br>` : ''}
+            <small><i class="fas fa-briefcase"></i> ${jobTitle}</small><br>
+            <small class="badge bg-secondary">${status}</small>
+          </li>
+        `;
+      });
+      
+      if (count > applicants.length) {
+        html += `<li class="text-muted small">... and ${count - applicants.length} more</li>`;
+      }
+      
+      html += '</ul>';
+    }
+    
+    html += '</div></div>';
+    return html;
+  }
+
+  // Load applicants when page loads
+  loadApplicants();
+})();
+</script>
+
+<style>
+.map-popup {
+  font-size: 14px;
+}
+
+.map-popup .applicant-list ul li {
+  font-size: 13px;
+}
+
+.map-popup .badge {
+  font-size: 11px;
+}
+</style>
+{% endblock %}
+
