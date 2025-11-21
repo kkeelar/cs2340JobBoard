@@ -5,12 +5,10 @@ and send email notifications to recruiters.
 Run this command periodically (e.g., via cron) to check for new matches.
 """
 from django.core.management.base import BaseCommand
-from django.core.mail import send_mail
-from django.conf import settings
 from django.utils import timezone
 from jobs.models import SavedCandidateSearch, CandidateSearchMatch
 from jobs.search_utils import find_new_matches_for_search, create_matches_for_search
-from django.template.loader import render_to_string
+from jobs.signals import send_match_notification_email
 
 
 class Command(BaseCommand):
@@ -66,7 +64,7 @@ class Command(BaseCommand):
                     
                     if recruiter_email:
                         try:
-                            self._send_notification_email(
+                            send_match_notification_email(
                                 recruiter_email,
                                 recruiter.user.username,
                                 search,
@@ -97,52 +95,5 @@ class Command(BaseCommand):
                 f'Summary: {total_new_matches} new matches found, '
                 f'{total_notifications_sent} notification(s) sent'
             )
-        )
-
-    def _send_notification_email(self, recipient_email, recruiter_username, saved_search, matches):
-        """Send email notification about new candidate matches"""
-        subject = f'New Candidate Matches for "{saved_search.name}"'
-        
-        # Create email content
-        match_list = []
-        for match in matches[:10]:  # Limit to 10 in email
-            candidate = match.candidate
-            match_list.append({
-                'name': candidate.user.get_full_name() or candidate.user.username,
-                'headline': candidate.headline or '',
-                'location': candidate.location or '',
-                'profile_url': f'{settings.SITE_URL if hasattr(settings, "SITE_URL") else "http://localhost:8000"}/accounts/u/{candidate.user.username}/',
-            })
-        
-        message = f"""
-Hello {recruiter_username},
-
-We found {matches.count()} new candidate(s) that match your saved search "{saved_search.name}".
-
-"""
-        for i, match_info in enumerate(match_list, 1):
-            message += f"{i}. {match_info['name']}"
-            if match_info['headline']:
-                message += f" - {match_info['headline']}"
-            if match_info['location']:
-                message += f" ({match_info['location']})"
-            message += f"\n   View profile: {match_info['profile_url']}\n\n"
-
-        if matches.count() > 10:
-            message += f"\n... and {matches.count() - 10} more match(es).\n"
-
-        message += f"""
-View all matches: {settings.SITE_URL if hasattr(settings, "SITE_URL") else "http://localhost:8000"}/jobs/searches/{saved_search.pk}/matches/
-
-Best regards,
-JobBoard Team
-"""
-
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@jobboard.com',
-            recipient_list=[recipient_email],
-            fail_silently=False,
         )
 
